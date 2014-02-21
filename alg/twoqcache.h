@@ -42,9 +42,7 @@ public:
         }
 
         aIn.setCacheSize(cacheSize - mainCache.size());
-        result = aIn.put(key, value);
-
-        return result;
+        return aIn.put(key, value);
     }
 
     bool erase(const Key &key) {
