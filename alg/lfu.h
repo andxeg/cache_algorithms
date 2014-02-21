@@ -92,12 +92,8 @@ private:
 
             assert(lfuIt != lfuList.end());
 
-            //Key key = lfuIt->front().first;
-            //Value value = lfuIt->front().second;
-
             if (evictionCallback) {
                 evictionCallback(lfuIt->front().first, lfuIt->front().second);
-                //evictionCallback(key, value);
             }
 
             assert(!lfuIt->empty());
