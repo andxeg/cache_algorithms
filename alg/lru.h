@@ -63,6 +63,14 @@ public:
         makeSizeInvariant(cacheSize);
     }
 
+    const std::pair<Key, Value> *head() const {
+        return &lruList.back();
+    }
+
+    const std::pair<Key, Value> *tail() const {
+        return &lruList.front();
+    }
+
 private:
     void makeSizeInvariant(size_t size) {
         while (lookup.size() > size) {

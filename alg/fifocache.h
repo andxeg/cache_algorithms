@@ -86,4 +86,3 @@ private:
     size_t cacheSize;
     std::function<void(const Key &,const Value &)> evictionCallback;
 };
-

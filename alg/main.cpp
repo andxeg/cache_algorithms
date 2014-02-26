@@ -2,6 +2,7 @@
 #include "lfu.h"
 #include "lru.h"
 #include "midpointlru.h"
+#include "mqcache.h"
 #include "snlru.h"
 #include "twoqcache.h"
 
@@ -73,7 +74,6 @@ int test(size_t cacheSize, const std::string& fileName) {
 
                 auto addedTimeIt = addedTime.find(id);
                 if (addedTimeIt != addedTime.end()) {
-                    holdTime.push_back(count - addedTimeIt->second);
                     addedTime.erase(addedTimeIt);
                 }
             } else {
@@ -146,6 +146,11 @@ int main(int argc, const char* argv[]) {
     if (cacheType == "fifo") {
         std::cout << "FIFO cache\n";
         return test<FifoCache<std::string, std::string>>(cacheSize, fileName);
+    }
+
+    if (cacheType == "mq") {
+        std::cout << "MQ cache\n";
+        return test<MQCache<std::string, std::string>>(cacheSize, fileName);
     }
 
     std::cout << "Unknown cache type " << cacheType << "\n";
