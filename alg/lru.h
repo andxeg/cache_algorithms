@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdlib>
 #include <functional>
 #include <list>
 #include <unordered_map>
@@ -63,11 +64,11 @@ public:
         makeSizeInvariant(cacheSize);
     }
 
-    const std::pair<Key, Value> *head() const {
+    const std::pair<Key, Value> *mruItem() const {
         return &lruList.back();
     }
 
-    const std::pair<Key, Value> *tail() const {
+    const std::pair<Key, Value> *lruItem() const {
         return &lruList.front();
     }
 

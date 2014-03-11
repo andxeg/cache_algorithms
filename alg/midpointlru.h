@@ -2,8 +2,9 @@
 
 #include "lru.h"
 
-#include <stdexcept>
 #include <cmath>
+#include <cstdlib>
+#include <stdexcept>
 
 template <typename Key, typename Value>
 class MidPointLRUCache {

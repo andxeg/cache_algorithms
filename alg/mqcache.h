@@ -12,16 +12,19 @@ class MQCache {
     struct ValueHolder {
         ValueHolder() :
                 expireTime(0),
-                reqTime(0) {}
+                reqTime(0),
+                reqs(0) {}
 
-        ValueHolder(const Value &v, size_t expTime, size_t rTime) :
+        ValueHolder(const Value &v, size_t expTime, size_t rTime, size_t rs) :
                 value(v),
                 expireTime(expTime),
-                reqTime(rTime) {}
+                reqTime(rTime),
+                reqs(rs) {}
 
         Value value;
         size_t expireTime;
         size_t reqTime;
+        size_t reqs;
     };
 
     static constexpr size_t DEF_LRU_COUNT = 8;
@@ -30,7 +33,7 @@ class MQCache {
 public:
     explicit MQCache(size_t size, size_t lruCount = DEF_LRU_COUNT) :
             cacheSize(size < lruCount ? lruCount : size),
-            expireTime(cacheSize),
+            expireTime(cacheSize * 10),
             currentTime(0),
             out(cacheSize * OUT_SIZE_MUL) {
         for (size_t index = 0; index < lruCount; ++index) {
@@ -48,15 +51,19 @@ public:
             if (valueHolder) {
                 ++currentTime;
 
-                valueHolder = lruList[index + 1].put(key, *valueHolder);
-                lruList[index].erase(key);
-
-                updateExpireTime(valueHolder->reqTime, index);
+                updateExpireTime(valueHolder->reqTime);
 
                 valueHolder->expireTime = currentTime + expireTime;
                 valueHolder->reqTime = currentTime;
+                ++valueHolder->reqs;
 
-                assert(size() <= cacheSize);
+                size_t lruIndex = index + 1;
+                if (lruIndex != index) {
+                    valueHolder = lruList[lruIndex].put(key, *valueHolder);
+                    lruList[index].erase(key);
+
+                    assert(size() <= cacheSize);
+                }
 
                 return &valueHolder->value;
             }
@@ -66,10 +73,11 @@ public:
         if (valueHolder) {
             ++currentTime;
 
-            updateExpireTime(valueHolder->reqTime, lruList.size() - 1);
+            updateExpireTime(valueHolder->reqTime);
 
             valueHolder->expireTime = currentTime + expireTime;
             valueHolder->reqTime = currentTime;
+            ++valueHolder->reqs;
 
             return &valueHolder->value;
         }
@@ -85,22 +93,25 @@ public:
 
         ++currentTime;
 
-        auto *outValue = out.find(key);
-
-        if (outValue) {
-            size_t lruIndex = getLruIndex(outValue->first + 1);
-
-            updateExpireTime(outValue->first, outValue->second);
-
-            out.erase(key);
-
-            return putToLru(key, value, lruIndex);
-        }
-
         makeSizeInvariant(cacheSize - 1);
         assert(size() <= cacheSize - 1);
 
-        return &lruList.front().put(key, ValueHolder(value, currentTime + expireTime, currentTime))->value;
+        auto *outValue = out.find(key);
+
+        if (outValue) {
+            size_t reqs = outValue->first + 1;
+            size_t reqTime = outValue->second;
+            out.erase(key);
+
+            size_t lruIndex = getLruIndex(reqs);
+            updateExpireTime(reqTime);
+
+            out.erase(key);
+
+            return &lruList[lruIndex].put(key, ValueHolder(value, currentTime + expireTime, currentTime, reqs))->value;
+        }
+
+        return &lruList.front().put(key, ValueHolder(value, currentTime + expireTime, currentTime, 0))->value;
     }
 
     bool erase(const Key &key) {
@@ -133,10 +144,10 @@ private:
                 continue;
             }
 
-            auto* headItem = lruList[i].head();
-            if (headItem->second.expireTime < currentTime) {
-                lruList[i - 1].put(headItem->first, ValueHolder(headItem->second.value, currentTime + expireTime, currentTime));
-                lruList[i].erase(headItem->first);
+            auto* item = lruList[i].lruItem();
+            if (item->second.expireTime < currentTime) {
+                lruList[i - 1].put(item->first, ValueHolder(item->second.value, currentTime + expireTime, currentTime, item->second.reqs));
+                lruList[i].erase(item->first);
             }
         }
 
@@ -148,23 +159,19 @@ private:
             return;
         }
 
-        size_t lruIndex = 0;
         size_t itemsToRemove = size() - newSize;
         for (auto& lru : lruList) {
             while (lru.size() > 0 && itemsToRemove > 0) {
-                out.put(lru.tail()->first, std::make_pair(lruIndex, lru.tail()->second.reqTime));
+                auto item = lru.lruItem();
+                out.put(item->first, std::make_pair(item->second.reqs, item->second.reqTime));
 
                 if (evictionCallback) {
-                    evictionCallback(lru.tail()->first, lru.tail()->second.value);
+                    evictionCallback(lru.lruItem()->first, lru.lruItem()->second.value);
                 }
 
-                Key key = lru.tail()->first;
-
-                lru.erase(lru.tail()->first);
+                lru.erase(lru.lruItem()->first);
                 --itemsToRemove;
             }
-
-            ++lruIndex;
 
             if (itemsToRemove == 0) {
                 return;
@@ -172,18 +179,11 @@ private:
         }
     }
 
-    Value *putToLru(const Key &key, const Value &value, size_t index) {
-        makeSizeInvariant(cacheSize - 1);
-        assert(size() <= cacheSize - 1);
-
-        return &lruList[index].put(key, ValueHolder(value, currentTime + expireTime, currentTime))->value;
-    }
-
     size_t getLruIndex(size_t reqs) {
-        return std::min(reqs, lruList.size() - 1);
+        return std::min(size_t(log(reqs)), lruList.size() - 1);
     }
 
-    void updateExpireTime(size_t itemReqTime, size_t lruIndex) {
+    void updateExpireTime(size_t itemReqTime) {
         size_t tempDist = currentTime - itemReqTime;
 
         size_t pow2Dist = pow(2, ceil(log(tempDist)/log(2)));

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdlib>
 #include <cassert>
 #include <functional>
 #include <list>

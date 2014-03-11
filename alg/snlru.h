@@ -2,6 +2,7 @@
 
 #include "lru.h"
 
+#include <cstdlib>
 #include <vector>
 
 template <typename Key, typename Value>

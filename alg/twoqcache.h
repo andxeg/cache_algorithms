@@ -3,6 +3,8 @@
 #include "fifocache.h"
 #include "lru.h"
 
+#include <cstdlib>
+
 template <typename Key, typename Value>
 class TwoQCache {
 public:

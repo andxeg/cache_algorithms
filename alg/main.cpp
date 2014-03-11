@@ -1,3 +1,4 @@
+#include "acrcache.h"
 #include "fifocache.h"
 #include "lfu.h"
 #include "lru.h"
@@ -5,6 +6,8 @@
 #include "mqcache.h"
 #include "snlru.h"
 #include "twoqcache.h"
+
+#include "hierarchycache.h"
 
 #include <algorithm>
 #include <cassert>
@@ -31,12 +34,13 @@ int test(size_t cacheSize, const std::string& fileName) {
     std::vector<size_t> holdTime;
     size_t falseEvicted = 0;
 
-    cache.setEvictionCallback([&](const std::string &key, const std::string &) {
+    cache.setEvictionCallback([&](const std::string &key, const std::string &value) {
+        unusedItems.erase(key);
+
         if (warmUpItems.size() < cacheSize) {
             return;
         }
 
-        unusedItems.erase(key);
         evictedItems.insert(key);
 
         auto addedTimeIt = addedTime.find(key);
@@ -57,8 +61,8 @@ int test(size_t cacheSize, const std::string& fileName) {
 
         if (warmUpItems.size() < cacheSize) {
             warmUpItems.insert(id);
-            cache.put(id, id);
             unusedItems.insert(id);
+            cache.put(id, id);
         } else {
             const std::string *value = cache.find(id);
 
@@ -79,8 +83,9 @@ int test(size_t cacheSize, const std::string& fileName) {
             } else {
                 ++missed;
 
-                value = cache.put(id, id);
                 unusedItems.insert(id);
+
+                value = cache.put(id, id);
                 addedTime[id] = putCount;
                 ++putCount;
             }
@@ -102,13 +107,13 @@ int test(size_t cacheSize, const std::string& fileName) {
         medianHoldTime = *middleIt;
     }
 
-    std::cout << "Unused items count - " << unusedItems.size() << "\n";
-    std::cout << "False evicted count - " << falseEvicted << "\n";
-    std::cout << "Median hold time - " << medianHoldTime << "\n";
-    std::cout << "Cached items count - " << cache.size() << "\n";
-    std::cout << "Requests - " << count << "\n";
-    std::cout << "Misses - " << missed << "\n";
-    std::cout << "Hit rate - " << 100 * (count - missed) / float(count) << "\n";
+    std::cerr << "Unused items count - " << unusedItems.size() << "\n";
+    std::cerr << "False evicted count - " << falseEvicted << "\n";
+    std::cerr << "Median hold time - " << medianHoldTime << "\n";
+    std::cerr << "Cached items count - " << cache.size() << "\n";
+    std::cerr << "Requests - " << count << "\n";
+    std::cerr << "Misses - " << missed << "\n";
+    std::cerr << "Hit rate - " << 100 * (count - missed) / float(count) << "\n";
 
     return 0;
 }
@@ -151,6 +156,16 @@ int main(int argc, const char* argv[]) {
     if (cacheType == "mq") {
         std::cout << "MQ cache\n";
         return test<MQCache<std::string, std::string>>(cacheSize, fileName);
+    }
+
+    if (cacheType == "acr") {
+        std::cout << "ACR cache\n";
+        return test<ACRCache<std::string, std::string>>(cacheSize, fileName);
+    }
+
+    if (cacheType == "hierarchy") {
+        std::cout << "Hierarchy cache\n";
+        return test<HierarchyCache<std::string, std::string>>(cacheSize, fileName);
     }
 
     std::cout << "Unknown cache type " << cacheType << "\n";
