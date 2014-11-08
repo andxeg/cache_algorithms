@@ -1,15 +1,14 @@
 #!/bin/sh
 
-dataFile=$1
-maxCacheSize=$2
-step=$3
+maxCacheSize=$1
+step=$2
+dataFile=$3
 
-algs="mid lru lfu 2q s4lru fifo"
+algs="arc fifo lfu lru mid mq s4lru 2q"
 for alg in $algs
 do
-    echo $alg
-    for size in $(jot $maxCacheSize $step $maxCacheSize $step)
+    for size in $(seq $step $step $maxCacheSize)
     do
-        ./cachealg $alg $size $dataFile
+        ./cachealg $alg $size "$dataFile"
     done
 done
