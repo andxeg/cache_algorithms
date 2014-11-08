@@ -1,4 +1,4 @@
-#include "acrcache.h"
+#include "arccache.h"
 #include "fifocache.h"
 #include "lfu.h"
 #include "lru.h"
@@ -6,8 +6,6 @@
 #include "mqcache.h"
 #include "snlru.h"
 #include "twoqcache.h"
-
-#include "hierarchycache.h"
 
 #include <algorithm>
 #include <cassert>
@@ -158,14 +156,9 @@ int main(int argc, const char* argv[]) {
         return test<MQCache<std::string, std::string>>(cacheSize, fileName);
     }
 
-    if (cacheType == "acr") {
-        std::cout << "ACR cache\n";
-        return test<ACRCache<std::string, std::string>>(cacheSize, fileName);
-    }
-
-    if (cacheType == "hierarchy") {
-        std::cout << "Hierarchy cache\n";
-        return test<HierarchyCache<std::string, std::string>>(cacheSize, fileName);
+    if (cacheType == "arc") {
+        std::cout << "ARC cache\n";
+        return test<ARCCache<std::string, std::string>>(cacheSize, fileName);
     }
 
     std::cout << "Unknown cache type " << cacheType << "\n";

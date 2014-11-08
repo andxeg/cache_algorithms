@@ -8,9 +8,9 @@
 #include <iostream>
 
 template <typename Key, typename Value>
-class ACRCache {
+class ARCCache {
 public:
-    explicit ACRCache(size_t size) :
+    explicit ARCCache(size_t size) :
             cacheSize(size < 1 ? 1 : size),
             splitPoint(0),
             top1Lru(cacheSize),
