@@ -9,20 +9,22 @@ mid = load("mid.txt")(:, 2);
 mq = load("mq.txt")(:, 2);
 mq_wo_exp = load("mq_wo_exp.txt")(:, 2);
 s4lru = load("s4lru.txt")(:, 2);
+opt = load("opt.txt")(:, 2);
 
-plot(x, mq_wo_exp, 'linewidth', 2,
+plot(x, opt, 'linewidth', 2,
+     x, mq_wo_exp, 'linewidth', 2,
      x, mid, 'linewidth', 2,
      x, s4lru, 'linewidth', 2,
      x, lfu, 'linewidth', 2,
      x, arc, 'linewidth', 2,
      x, tq, 'linewidth', 2,
-     x, mq, 'linewidth', 2,
+     x, mq, '-.', 'linewidth', 2,
      x, lru, '-.', 'linewidth', 2,
      x, fifo, '-.', 'linewidth', 2);
 
-l = legend('MQ*','Mid LRU','S4LRU','LFU','ARC','2Q',
+l = legend('OPT', 'MQ*','Mid LRU','S4LRU','LFU','ARC','2Q',
        'MQ','LRU', 'FIFO',
-       'location', 'east');
+       'location', 'southeast');
  
 set(l, 'fontsize', 14);
 
