@@ -105,13 +105,16 @@ int test(size_t cacheSize, const std::string& fileName) {
         medianHoldTime = *middleIt;
     }
 
-    std::cerr << "Unused items count - " << unusedItems.size() << "\n";
+/*    std::cerr << "Unused items count - " << unusedItems.size() << "\n";
     std::cerr << "False evicted count - " << falseEvicted << "\n";
     std::cerr << "Median hold time - " << medianHoldTime << "\n";
     std::cerr << "Cached items count - " << cache.size() << "\n";
     std::cerr << "Requests - " << count << "\n";
     std::cerr << "Misses - " << missed << "\n";
     std::cerr << "Hit rate - " << 100 * (count - missed) / float(count) << "\n";
+*/
+    std::cout << cache.size() << ' ' <<
+    (count != 0 ? 100 * (count - missed) / float(count) : 100) << std::endl;
 
     return 0;
 }
@@ -122,42 +125,42 @@ int main(int argc, const char* argv[]) {
     std::string fileName = argv[3];
 
     if (cacheType == "mid") {
-        std::cout << "Mid point LRU cache\n";
+//        std::cout << "Mid point LRU cache\n";
         return test<MidPointLRUCache<std::string, std::string>>(cacheSize, fileName);
     }
 
     if (cacheType == "lru") {
-        std::cout << "LRU cache\n";
+//        std::cout << "LRU cache\n";
         return test<LRUCache<std::string, std::string>>(cacheSize, fileName);
     }
 
     if (cacheType == "lfu") {
-        std::cout << "LFU cache\n";
+//        std::cout << "LFU cache\n";
         return test<LFUCache<std::string, std::string>>(cacheSize, fileName);
     }
 
     if (cacheType == "2q") {
-        std::cout << "2 queue cache\n";
+//        std::cout << "2 queue cache\n";
         return test<TwoQCache<std::string, std::string>>(cacheSize, fileName);
     }
 
     if (cacheType == "s4lru") {
-        std::cout << "S4LRU cache\n";
+//        std::cout << "S4LRU cache\n";
         return test<SNLRUCache<std::string, std::string>>(cacheSize, fileName);
     }
 
     if (cacheType == "fifo") {
-        std::cout << "FIFO cache\n";
+//        std::cout << "FIFO cache\n";
         return test<FifoCache<std::string, std::string>>(cacheSize, fileName);
     }
 
     if (cacheType == "mq") {
-        std::cout << "MQ cache\n";
+//        std::cout << "MQ cache\n";
         return test<MQCache<std::string, std::string>>(cacheSize, fileName);
     }
 
     if (cacheType == "arc") {
-        std::cout << "ARC cache\n";
+//        std::cout << "ARC cache\n";
         return test<ARCCache<std::string, std::string>>(cacheSize, fileName);
     }
 

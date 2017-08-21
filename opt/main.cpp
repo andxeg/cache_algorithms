@@ -40,7 +40,7 @@ public:
             ++pos;
 
             if (pos % 100000 == 0) {
-                std::cout << "Get positions " << pos << "\n";
+//                std::cout << "Get positions " << pos << "\n";
             }
         }
     }
@@ -67,8 +67,8 @@ public:
     }
 
     float hitRate() const {
-        std::cout << requestCount << " " << missCount << "\n";
-        return 100 * (requestCount - missCount) / float(requestCount);
+//        std::cout << requestCount << " " << missCount << "\n";
+        return requestCount != 0 ? 100 * (requestCount - missCount) / float(requestCount) : 100;
     }
 
     void dump() const {
@@ -162,11 +162,11 @@ int main(int argc, const char* argv[]) {
         }
 
         if (++count % 100000 == 0) {
-            std::cout << "Process " << count << "\n";
+//            std::cout << "Process " << count << "\n";
         }
     }
 
-    std::cout << "Hit rate - " << cache.hitRate() << "\n";
+    std::cout << cacheSize << ' ' << cache.hitRate() << "\n";
 
     return 0;
 }
