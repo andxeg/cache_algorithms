@@ -104,6 +104,7 @@ public:
                 
                 while ((idSize + getCacheSize()) > cacheSize) {
                     freeUpSpace();
+                    // std::cout << getCacheSize() << std::endl;
                 }
 
                 PositionHolder posHolder = IdPositionHolderMap[id];
@@ -155,7 +156,15 @@ private:
             const PositionHolder& maxPosition = currentPositionsQueue.top();
             itemToRemove = maxPosition.it->first;
             auto& positionList = maxPosition.it->second;
+
+            // std::cout <<  "item to remove -> " << itemToRemove << std::endl;
             
+            // str::string cid = itemToRemove;
+            
+            // while (cid == itemToRemove) {
+
+            //     currentPositionsQueue.remove(maxPosition);
+            // }
 
             currentPositionsQueue.remove(maxPosition);
 
@@ -170,8 +179,13 @@ private:
                 }
                 */
 
+                auto iter = itemPositions.find(itemToRemove);
+
                 positionList.pop_front();
-                PositionHolder newPosHolder = PositionHolder(positionList.front(), maxPosition.it);
+                PositionHolder newPosHolder = PositionHolder(positionList.front(), iter);
+
+                auto it = IdPositionHolderMap.find(itemToRemove);
+                IdPositionHolderMap.erase(it);
                 IdPositionHolderMap[itemToRemove] = newPosHolder;
             }
         }
@@ -315,8 +329,8 @@ int main(int argc, const char* argv[]) {
             cache.process(id);
         }
 
-        if (++count % 100000 == 0) {
-        //    std::cout << "Process " << count << "\n";
+        if (++count % 1000 == 0) {
+           std::cout << "Process " << count << "\n";
         }
     }
 
@@ -331,7 +345,7 @@ int main(int argc, const char* argv[]) {
     std::cout << "Hit-rate -> " << cache.hitRate() << std::endl;
 
     std::cout << std::endl;
-    
+
     std::cout << "More precisely:" << std::endl;
     std::cout << "Cycle -> " << cache.cyclesCount << std::endl;
     std::cout << "Requests -> " << cache.requestCount << std::endl;
