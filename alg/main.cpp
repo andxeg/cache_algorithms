@@ -114,14 +114,18 @@ int test(size_t cacheSize, const std::string& fileName) {
     std::cerr << "Hit rate - " << 100 * (count - missed) / float(count) << "\n";
 */
     std::cout << cache.size() << ' ' <<
-    (count != 0 ? 100 * (count - missed) / float(count) : 100) << std::endl;
+    (count != 0 ? 100 * (count - missed) / float(count) : -1) << std::endl;
 
     return 0;
 }
 
 int main(int argc, const char* argv[]) {
     std::string cacheType = argv[1];
-    size_t cacheSize = atoi(argv[2]);
+
+    // size_t cacheSize = atoi(argv[2]);
+    std::string::size_type sz = 0;
+    size_t cacheSize = std::stoll(std::string(argv[1]), &sz, 0);
+
     std::string fileName = argv[3];
 
     if (cacheType == "mid") {
