@@ -90,14 +90,16 @@ public:
 
             PositionHolder posHolder = IdPositionHolderMap[id];
             currentPositionsQueue.push(posHolder);
-
             lookup.insert(id);
         }
 
+        std::cout << "Current cycle -> " << cyclesCount << std::endl;
+
         ++cyclesCount;
 
-        // std::cout << "WarmUp. Lookup size after adding -> " << lookup.size() << std::endl;
-        // std::cout << "Current cache size -> " << getCacheSize() << std::endl;
+
+        std::cout << "WarmUp. Lookup size after adding -> " << lookup.size() << std::endl;
+        std::cout << "Current cache size -> " << getCacheSize() << std::endl;
 
         return lookup.size();
     }
@@ -112,6 +114,8 @@ public:
             
             if (contentSizes[id] < cacheSize) {
                 size_t idSize = contentSizes[id];
+
+                std::cout << "Adding element with id -> " << id << std::endl;
                 
                 while ((idSize + getCacheSize()) > cacheSize) {
                     // std::cout << "freeUpSpace" << std::endl;
@@ -123,11 +127,13 @@ public:
                 currentPositionsQueue.push(posHolder);
                 lookup.insert(id);
 
-                // std::cout << "Process. Lookup size after adding -> " << lookup.size() << std::endl;
-                // std::cout << "Current cache size -> " << getCacheSize() << std::endl;
+                std::cout << "Process. Lookup size after adding -> " << lookup.size() << std::endl;
+                std::cout << "Current cache size -> " << getCacheSize() << std::endl;
             }
 
         }
+
+        std::cout << "Current cycle -> " << cyclesCount << std::endl;
 
         ++cyclesCount;
     }
@@ -172,21 +178,71 @@ private:
             itemToRemove = maxPosition.it->first;
             auto& positionList = maxPosition.it->second;
 
+            std::cout << "itemToRemove -> " << itemToRemove << std::endl;
+
+            // print current cache requests
+            for (const auto& element: lookup) {
+                std::cout << element << std::endl;
+            }
+            //
+
+            std::cout << "positionList.size() before pop -> " << positionList.size() << std::endl;
+
+            
             // !!!
             if (!positionList.empty()) {
-                positionsQueue.push(PositionHolder(positionList.front(), maxPosition.it));
-                positionList.pop_front();
+                /* OLD CODE
+                std::cout << "positionList is not empty" << std::endl;
+                // Delete previous positionHolder from IdPositionHolderMap
+                // and add new with new max position.
+                // Simple replace old positionHolder.
+
+                auto it = IdPositionHolderMap.find(itemToRemove);
+                if (it != IdPositionHolderMap.end()) {
+                    PositionHolder oldPosHolder = it->second;
+                    std::cout << "In if Delete old posHolder for -> " << oldPosHolder.it->first << std::endl;
+                    // delete oldPosHolder from priority queue
+                    std::cout << "currentPositionsQueue.size() before removing in IF-> " << currentPositionsQueue.size() << std::endl;
+                    
+                    currentPositionsQueue.remove(oldPosHolder);
+                    
+                    std::cout << "Top after removing -> " << currentPositionsQueue.top().it->first << std::endl;
+                    PositionHolder newPosHolder = PositionHolder(positionList.front(), maxPosition.it);
+                    positionList.pop_front();
+
+                    IdPositionHolderMap.erase(it);
+                    IdPositionHolderMap[itemToRemove] = newPosHolder;
+                    std::cout << "item to remove" << itemToRemove << std::endl;
+                }
+                */
+
+                maxPosition;
+                
+
+
+
+
+
+
             }
         }
 
 
+        auto& positionList = itemPositions[itemToRemove];
+        std::cout << "positionList.size() after pop -> " << positionList.size() << std::endl;
+        
+        std::cout << "lookup.size() before erase -> " << lookup.size() << std::endl;
         lookup.erase(itemToRemove);
+        std::cout << "lookup.size() after erase -> " << lookup.size() << std::endl;
 
-        // std::cout << "currentPositionsQueue.size() before removing -> " << currentPositionsQueue.size() << std::endl;
+        std::cout << "currentPositionsQueue.size() before removing -> " << currentPositionsQueue.size() << std::endl;
 
         PositionHolder posHolder = IdPositionHolderMap[itemToRemove];
+
+        std::cout << "Delete posHolder for -> " << posHolder.it->first << std::endl;
         currentPositionsQueue.remove(posHolder);
-        // std::cout << "currentPositionsQueue.size() after removing -> " << currentPositionsQueue.size() << std::endl;
+        std::cout << "Top after removing -> " << currentPositionsQueue.top().it->first << std::endl;
+        std::cout << "currentPositionsQueue.size() after removing -> " << currentPositionsQueue.size() << std::endl;
     }
 
 // private:
@@ -228,7 +284,9 @@ public:
         }
 
         bool operator == (const PositionHolder& other) const {
-            return (this->position == other.position) && (this->it == other.it);
+            // return (this->position == other.position) && (this->it == other.it);
+            return (this->position == other.position) && (this->it->first == other.it->first);
+            
         }
     };
 
@@ -335,10 +393,11 @@ int main(int argc, const char* argv[]) {
     std::cout << "Algorithm work time -> " <<  time / 3600  << "  hours " << (time % 3600) / 60  << " mins " << (time % 3600) % 60 << " secs" << std::endl;
 
     std::cout << "\nAlgorithm results:\n";
-    std::cout << cacheSize << ' ' << cache.hitRate() << "\n";
-    std::cout <<  "Cycle -> " << cache.cyclesCount << 
-        "Requests -> " << cache.requestCount <<  
-        "Miss Count -> " << cache.missCount << std::endl;
+    std::cout << "Cache size -> " << cacheSize << " Kbyte" << std::endl;
+    std::cout << "Hit-rate -> " << cache.hitRate() << std::endl;
+    std::cout << "Cycle -> " << cache.cyclesCount << std::endl;
+    std::cout << "Requests -> " << cache.requestCount << std::endl;
+    std::cout << "Miss Count -> " << cache.missCount << std::endl;
 
 
     // for (auto& element : cache.IdPositionHolderMap) 
