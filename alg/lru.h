@@ -9,6 +9,7 @@
 template <typename Key, typename Value>
 class LRUCache {
     typedef std::list<std::pair<Key, Value>> LruList;
+    typedef std::unordered_map<std::string, size_t> ContentSizes;
 public:
     explicit LRUCache(size_t size) :
             cacheSize(size < 1 ? 1 : size) {}
@@ -72,6 +73,14 @@ public:
         return &lruList.front();
     }
 
+    ContentSizes getContentSizes() {
+        return contentSizes;
+    }
+
+    void addCidSize(std::string cid, size_t size) {
+        contentSizes[cid] = size;
+    }
+
 private:
     void makeSizeInvariant(size_t size) {
         while (lookup.size() > size) {
@@ -101,6 +110,7 @@ private:
     std::unordered_map<Key, typename LruList::iterator> lookup;
     size_t cacheSize;
     std::function<Value(const Key&)> getFunction;
-
     std::function<void(const Key &,const Value &)> evictionCallback;
+
+    ContentSizes contentSizes;
 };

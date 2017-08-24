@@ -9,6 +9,7 @@
 
 template <typename Key, typename Value>
 class ARCCache {
+    typedef std::unordered_map<std::string, size_t> ContentSizes;
 public:
     explicit ARCCache(size_t size) :
             cacheSize(size < 1 ? 1 : size),
@@ -81,6 +82,14 @@ public:
         return top1Lru.size() + top2Lru.size();
     }
 
+    ContentSizes getContentSizes() {
+        return contentSizes;
+    }
+
+    void addCidSize(std::string cid, size_t size) {
+        contentSizes[cid] = size;
+    }
+
 private:
     void replace(const Key &key) {
         bool keyInB2 = (bottom2Lru.find(key) != nullptr);
@@ -118,4 +127,6 @@ private:
     LRUCache<Key, char> bottom2Lru;
 
     std::function<void(const Key &,const Value &)> evictionCallback;
+
+    ContentSizes contentSizes;
 };

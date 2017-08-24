@@ -7,6 +7,7 @@
 
 template <typename Key, typename Value>
 class SNLRUCache {
+    typedef std::unordered_map<std::string, size_t> ContentSizes;
 public:
     explicit SNLRUCache(size_t size, size_t lruCount = 4) :
             cacheSize(size < lruCount ? lruCount : size) {
@@ -62,8 +63,18 @@ public:
         lruList.front().setEvictionCallback(callback);
     }
 
+    ContentSizes getContentSizes() {
+        return contentSizes;
+    }
+
+    void addCidSize(std::string cid, size_t size) {
+        contentSizes[cid] = size;
+    }
+
 private:
     size_t cacheSize;
 
     std::vector<LRUCache<Key, Value>> lruList;
+
+    ContentSizes contentSizes;
 };

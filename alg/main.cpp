@@ -16,6 +16,34 @@
 #include <unordered_set>
 #include <vector>
 
+
+typedef std::unordered_map<std::string, size_t> ContentSizes;
+
+template <typename Cache>
+bool canAppendIdToWarmUpItems(  std::unordered_set<std::string> & warmUpItems,
+                                std::string id,
+                                size_t & cacheSize,
+                                Cache & cache)
+{
+    
+    ContentSizes contentSizes = cache.getContentSizes();
+
+    bool result = true;
+    size_t warmUpItemsSize = 0;
+    size_t idSize = contentSizes[id];
+
+    for (auto& warmUpItem : warmUpItems) {
+        warmUpItemsSize += contentSizes[warmUpItem];
+    }
+
+    if ((warmUpItemsSize + idSize) > cacheSize) {
+        result = false;
+    }
+
+    return result;
+}
+
+
 template <typename Cache>
 int test(size_t cacheSize, const std::string& fileName) {
     size_t missed = 0;
@@ -51,11 +79,19 @@ int test(size_t cacheSize, const std::string& fileName) {
     std::ifstream in(fileName);
     while (true) {
         std::string id;
+        size_t size;
+
         in >> id;
+        in >> size;
 
         if (in.eof()) {
             break;
         }
+
+        cache.addCidSize(id, size);
+
+        // canAppendIdToWarmUpItems<Cache>(warmUpItems, id, cacheSize, cache);
+
 
         if (warmUpItems.size() < cacheSize) {
             warmUpItems.insert(id);
@@ -105,13 +141,13 @@ int test(size_t cacheSize, const std::string& fileName) {
         medianHoldTime = *middleIt;
     }
 
-/*    std::cerr << "Unused items count - " << unusedItems.size() << "\n";
-    std::cerr << "False evicted count - " << falseEvicted << "\n";
-    std::cerr << "Median hold time - " << medianHoldTime << "\n";
-    std::cerr << "Cached items count - " << cache.size() << "\n";
-    std::cerr << "Requests - " << count << "\n";
-    std::cerr << "Misses - " << missed << "\n";
-    std::cerr << "Hit rate - " << 100 * (count - missed) / float(count) << "\n";
+/*    std::cout << "Unused items count - " << unusedItems.size() << "\n";
+    std::cout << "False evicted count - " << falseEvicted << "\n";
+    std::cout << "Median hold time - " << medianHoldTime << "\n";
+    std::cout << "Cached items count - " << cache.size() << "\n";
+    std::cout << "Requests - " << count << "\n";
+    std::cout << "Misses - " << missed << "\n";
+    std::cout << "Hit rate - " << 100 * (count - missed) / float(count) << "\n";
 */
     std::cout << cache.size() << ' ' <<
     (count != 0 ? 100 * (count - missed) / float(count) : -1) << std::endl;
@@ -121,50 +157,40 @@ int test(size_t cacheSize, const std::string& fileName) {
 
 int main(int argc, const char* argv[]) {
     std::string cacheType = argv[1];
-
-    // size_t cacheSize = atoi(argv[2]);
     std::string::size_type sz = 0;
-    size_t cacheSize = std::stoll(std::string(argv[1]), &sz, 0);
+    size_t cacheSize = std::stoll(std::string(argv[2]), &sz, 0);
 
     std::string fileName = argv[3];
 
     if (cacheType == "mid") {
-//        std::cout << "Mid point LRU cache\n";
         return test<MidPointLRUCache<std::string, std::string>>(cacheSize, fileName);
     }
 
     if (cacheType == "lru") {
-//        std::cout << "LRU cache\n";
         return test<LRUCache<std::string, std::string>>(cacheSize, fileName);
     }
 
     if (cacheType == "lfu") {
-//        std::cout << "LFU cache\n";
         return test<LFUCache<std::string, std::string>>(cacheSize, fileName);
     }
 
     if (cacheType == "2q") {
-//        std::cout << "2 queue cache\n";
         return test<TwoQCache<std::string, std::string>>(cacheSize, fileName);
     }
 
     if (cacheType == "s4lru") {
-//        std::cout << "S4LRU cache\n";
         return test<SNLRUCache<std::string, std::string>>(cacheSize, fileName);
     }
 
     if (cacheType == "fifo") {
-//        std::cout << "FIFO cache\n";
         return test<FifoCache<std::string, std::string>>(cacheSize, fileName);
     }
 
     if (cacheType == "mq") {
-//        std::cout << "MQ cache\n";
         return test<MQCache<std::string, std::string>>(cacheSize, fileName);
     }
 
     if (cacheType == "arc") {
-//        std::cout << "ARC cache\n";
         return test<ARCCache<std::string, std::string>>(cacheSize, fileName);
     }
 

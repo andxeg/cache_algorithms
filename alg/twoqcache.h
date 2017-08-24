@@ -7,6 +7,7 @@
 
 template <typename Key, typename Value>
 class TwoQCache {
+    typedef std::unordered_map<std::string, size_t> ContentSizes;
 public:
     explicit TwoQCache(size_t size, float mainCacheFactor = 0.75, float outCacheFactor = 5) :
             cacheSize(size < 2 ? 2 : size),
@@ -65,6 +66,14 @@ public:
         mainCache.setEvictionCallback(callback);
     }
 
+    ContentSizes getContentSizes() {
+        return contentSizes;
+    }
+
+    void addCidSize(std::string cid, size_t size) {
+        contentSizes[cid] = size;
+    }
+
 private:
     size_t cacheSize;
 
@@ -73,4 +82,6 @@ private:
     FifoCache<Key, char> aOut;
 
     std::function<void(const Key &,const Value &)> evictionCallback;
+
+    ContentSizes contentSizes;
 };

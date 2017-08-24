@@ -8,6 +8,7 @@
 
 template <typename Key, typename Value>
 class MidPointLRUCache {
+    typedef std::unordered_map<std::string, size_t> ContentSizes;
 public:
     explicit MidPointLRUCache(size_t size, float point = 0.85) :
             cacheSize(size < 2 ? 2 : size),
@@ -68,9 +69,18 @@ public:
         tail.setCacheSize(cacheSize - head.size());
     }
 
+    ContentSizes getContentSizes() {
+        return contentSizes;
+    }
+
+    void addCidSize(std::string cid, size_t size) {
+        contentSizes[cid] = size;
+    }
+
 private:
     size_t cacheSize;
     size_t headSize;
     LRUCache<Key, Value> tail;
     LRUCache<Key, Value> head;
+    ContentSizes contentSizes;
 };

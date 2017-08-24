@@ -9,6 +9,8 @@
 
 template <typename Key, typename Value>
 class MQCache {
+    typedef std::unordered_map<std::string, size_t> ContentSizes;
+
     struct ValueHolder {
         ValueHolder() :
                 expireTime(0),
@@ -137,6 +139,14 @@ public:
         evictionCallback = callback;
     }
 
+    ContentSizes getContentSizes() {
+        return contentSizes;
+    }
+
+    void addCidSize(std::string cid, size_t size) {
+        contentSizes[cid] = size;
+    }
+
 private:
     void checkFrequentExpariation() {
         for (int i = lruList.size() - 1; i > 0; --i) {
@@ -210,4 +220,6 @@ private:
     FifoCache<Key, std::pair<size_t, size_t>> out;
 
     std::function<void(const Key &,const Value &)> evictionCallback;
+
+    ContentSizes contentSizes;
 };

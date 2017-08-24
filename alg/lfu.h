@@ -11,6 +11,7 @@ template <typename Key, typename Value>
 class LFUCache {
     typedef std::list<std::pair<Key, Value>> ItemList;
     typedef std::list<ItemList> LFUList;
+    typedef std::unordered_map<std::string, size_t> ContentSizes;
 
     struct ItemMeta {
         ItemMeta() {}
@@ -83,6 +84,14 @@ public:
         evictionCallback = callback;
     }
 
+    ContentSizes getContentSizes() {
+        return contentSizes;
+    }
+
+    void addCidSize(std::string cid, size_t size) {
+        contentSizes[cid] = size;
+    }
+
 private:
     void makeSizeInvariant(size_t size) {
         while (lookup.size() > size) {
@@ -140,4 +149,6 @@ private:
     size_t cacheSize;
 
     std::function<void(const Key &,const Value &)> evictionCallback;
+
+    ContentSizes contentSizes;
 };
