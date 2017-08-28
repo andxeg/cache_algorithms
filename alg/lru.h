@@ -1,9 +1,10 @@
 #pragma once
 
-#include <cstdlib>
-#include <functional>
 #include <list>
 #include <unordered_map>
+#include <cstdlib>
+#include <iostream>
+#include <functional>
 #include <utility>
 
 template <typename Key, typename Value>
@@ -30,7 +31,8 @@ public:
             return result;
         }
 
-        makeSizeInvariant(cacheSize - 1);
+        size_t cidSize = contentSizes[key];
+        makeSizeInvariant(cacheSize - cidSize);
 
         lruList.push_back(std::make_pair(key, value));
         auto addedIt = --lruList.end();
@@ -77,13 +79,30 @@ public:
         return contentSizes;
     }
 
+    size_t getCacheSize() {
+        size_t result = 0;
+
+        for (auto& element : lookup) {
+            result += contentSizes[element.first];
+        }
+
+        return result;
+    }
+
     void addCidSize(std::string cid, size_t size) {
+        ContentSizes::iterator it = contentSizes.find(cid);
+        if (it != contentSizes.end() && it->second != size) {
+            std::cout << "Another size for content. Was -> " <<  it->second
+                << " now -> "<< size 
+                << " for cid -> " << cid << std::endl;
+        }
+
         contentSizes[cid] = size;
     }
 
 private:
     void makeSizeInvariant(size_t size) {
-        while (lookup.size() > size) {
+        while (getCacheSize() > size) {
             if (evictionCallback) {
                 evictionCallback(lruList.front().first, lruList.front().second);
             }

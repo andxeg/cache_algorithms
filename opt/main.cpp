@@ -12,6 +12,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "timestamps.h"
+
 
 typedef std::unordered_map<std::string, size_t> ContentSizes;
 
@@ -31,15 +33,6 @@ public:
         }
     }
 };
-
-
-template <typename T>
-std::string ToString(T val)
-{
-    std::stringstream stream;
-    stream << val;
-    return stream.str();
-}
 
 
 class OptCache {
@@ -268,22 +261,6 @@ bool canAppendIdToWarmUpItems(  std::unordered_set<std::string> & warmUpItems,
 }
 
 
-
-struct tm * print_current_data_and_time(const std::string & message) {
-    time_t t = time(0);
-    struct tm * now = localtime(&t);
-    std::string result = ToString<int>(now->tm_year + 1900) + std::string("-") +
-                         ToString<int>(now->tm_mon + 1) + std::string("-") +
-                         ToString<int>(now->tm_mday ) + std::string(".") +
-                         ToString<int>(now->tm_hour ) + std::string(":") +
-                         ToString<int>(now->tm_min ) + std::string(":") +
-                         ToString<int>(now->tm_sec );
-    std::cout << message << " Current time -> " << result << std::endl;
-
-    return now;
-}
-
-
 int main(int argc, const char* argv[]) {
     std::string::size_type sz = 0;
     size_t cacheSize = std::stoll(std::string(argv[1]), &sz, 0);
@@ -348,7 +325,7 @@ int main(int argc, const char* argv[]) {
 
     std::cout << "More precisely:" << std::endl;
     std::cout << "Cycle -> " << cache.cyclesCount << std::endl;
-    std::cout << "Requests -> " << cache.requestCount << std::endl;
+    std::cout << "Requests without warming -> " << cache.requestCount << std::endl;
     std::cout << "Miss Count -> " << cache.missCount << std::endl;
 
 

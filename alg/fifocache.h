@@ -73,7 +73,23 @@ public:
         return contentSizes;
     }
 
+    size_t getCacheSize() {
+        size_t result = 0;
+        
+        for (auto& element : lookup) {
+            result += contentSizes[lookup->first];
+        }
+        
+        return result;
+    }
+
     void addCidSize(std::string cid, size_t size) {
+        ContentSizes::iterator it = contentSizes.find(cid);
+        if (it != contentSizes.end())
+            std::cout << "Size is repeated. Was -> " <<  it->second
+                << " now -> "<< size 
+                << " for cid -> " << cid << std::endl;
+
         contentSizes[cid] = size;
     }
 

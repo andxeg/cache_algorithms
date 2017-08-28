@@ -7,17 +7,30 @@
 #include "snlru.h"
 #include "twoqcache.h"
 
-#include <algorithm>
-#include <cassert>
 #include <cmath>
+#include <cassert>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
-#include <unordered_set>
+#include <sstream>
+#include <algorithm>
 #include <vector>
+#include <unordered_set>
+
+#include "timestamps.h"
 
 
 typedef std::unordered_map<std::string, size_t> ContentSizes;
+
+
+template <typename T>
+T convertFromStringTo(std::string str) {
+    T val;
+    std::stringstream stream(str);
+    stream >> val;
+    return val;
+}
+
 
 template <typename Cache>
 bool canAppendIdToWarmUpItems(  std::unordered_set<std::string> & warmUpItems,
@@ -49,6 +62,7 @@ int test(size_t cacheSize, const std::string& fileName) {
     size_t missed = 0;
     size_t count = 0;
     size_t putCount = 0;
+    size_t cyclesCount = 0;
 
     Cache cache(cacheSize);
 
@@ -59,11 +73,23 @@ int test(size_t cacheSize, const std::string& fileName) {
     std::unordered_map<std::string, size_t> addedTime;
     std::vector<size_t> holdTime;
     size_t falseEvicted = 0;
+    std::string message = "Start algo.\0";
+    struct tm * now = print_current_data_and_time(message);
+    int hour_start = now->tm_hour;
+    int min_start = now->tm_min;
+    int sec_start = now->tm_sec;
 
     cache.setEvictionCallback([&](const std::string &key, const std::string &value) {
         unusedItems.erase(key);
 
-        if (warmUpItems.size() < cacheSize) {
+        // calculate warmUpItems size 
+        size_t warmUpItemsSize = 0;
+        ContentSizes contentSizes = cache.getContentSizes();
+        for (auto&warmUpItem : warmUpItems ) {
+            warmUpItemsSize += contentSizes[warmUpItem];
+        }
+
+        if (warmUpItemsSize < cacheSize) {
             return;
         }
 
@@ -75,6 +101,11 @@ int test(size_t cacheSize, const std::string& fileName) {
             addedTime.erase(addedTimeIt);
         }
     });
+
+
+
+    message = "After cache initialization.\0";
+    now = print_current_data_and_time(message);
 
     std::ifstream in(fileName);
     while (true) {
@@ -90,13 +121,11 @@ int test(size_t cacheSize, const std::string& fileName) {
 
         cache.addCidSize(id, size);
 
-        // canAppendIdToWarmUpItems<Cache>(warmUpItems, id, cacheSize, cache);
-
-
-        if (warmUpItems.size() < cacheSize) {
+        if (canAppendIdToWarmUpItems<Cache>(warmUpItems, id, cacheSize, cache)) {
             warmUpItems.insert(id);
             unusedItems.insert(id);
             cache.put(id, id);
+            ++cyclesCount;
         } else {
             const std::string *value = cache.find(id);
 
@@ -130,6 +159,12 @@ int test(size_t cacheSize, const std::string& fileName) {
             }
 
             ++count;
+
+            if (count % 1000 == 0) {
+              std::cout << "Process " << count << "\n";
+            }
+
+            ++cyclesCount;
         }
     }
 
@@ -149,8 +184,23 @@ int test(size_t cacheSize, const std::string& fileName) {
     std::cout << "Misses - " << missed << "\n";
     std::cout << "Hit rate - " << 100 * (count - missed) / float(count) << "\n";
 */
-    std::cout << cache.size() << ' ' <<
-    (count != 0 ? 100 * (count - missed) / float(count) : -1) << std::endl;
+
+    message = "Algorithm was finished.\0";
+    now = print_current_data_and_time(message);
+    int time = now->tm_hour * 3600 + now->tm_min * 60 + now->tm_sec - hour_start * 3600 - min_start * 60 - sec_start;
+    std::cout << "Algorithm work time -> " <<  time / 3600  << "  hours " << (time % 3600) / 60  << " mins " << (time % 3600) % 60 << " secs" << std::endl;
+
+    std::cout << "\nAlgorithm results:\n";
+    std::cout << "Cache size -> " << cacheSize << " Kbyte" << std::endl;
+    std::cout << "Hit-rate -> " << 
+                (count != 0 ? 100 * (count - missed) / float(count) : -1)  << std::endl;
+
+    std::cout << std::endl;
+
+    std::cout << "More precisely:" << std::endl;
+    std::cout << "Cycle -> " << cyclesCount << std::endl;
+    std::cout << "Requests without warming -> " << count << std::endl;
+    std::cout << "Miss Count -> " << missed << std::endl;
 
     return 0;
 }
