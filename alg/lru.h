@@ -13,7 +13,8 @@ class LRUCache {
     typedef std::unordered_map<std::string, size_t> ContentSizes;
 public:
     explicit LRUCache(size_t size) :
-            cacheSize(size < 1 ? 1 : size) {}
+            cacheSize(size < 1 ? 1 : size),
+            currentCacheSize(0) {}
 
     Value* find(const Key &key) {
         auto it = lookup.find(key);
@@ -31,12 +32,18 @@ public:
             return result;
         }
 
+        
         size_t cidSize = contentSizes[key];
+        if (cidSize > cacheSize)
+            return nullptr;
+
         makeSizeInvariant(cacheSize - cidSize);
 
         lruList.push_back(std::make_pair(key, value));
         auto addedIt = --lruList.end();
         lookup[key] = addedIt;
+
+        currentCacheSize += cidSize;
 
         return &addedIt->second;
     }
@@ -80,13 +87,15 @@ public:
     }
 
     size_t getCacheSize() {
-        size_t result = 0;
+        
+        // size_t result = 0;
 
-        for (auto& element : lookup) {
-            result += contentSizes[element.first];
-        }
+        // for (auto& element : lookup) {
+        //     result += contentSizes[element.first];
+        // }
 
-        return result;
+        // return result;
+        return currentCacheSize;
     }
 
     void addCidSize(std::string cid, size_t size) {
@@ -107,6 +116,11 @@ private:
                 evictionCallback(lruList.front().first, lruList.front().second);
             }
 
+            size_t cidSize = contentSizes[lruList.front().first];
+            currentCacheSize -= cidSize;
+
+            // std::cout << "Current cache size erase -> " << currentCacheSize << std::endl;
+
             lookup.erase(lruList.front().first);
 
             lruList.pop_front();
@@ -124,12 +138,14 @@ private:
         return addedIt;
     }
 
-private:
+// private:
+public:
     LruList lruList;
     std::unordered_map<Key, typename LruList::iterator> lookup;
     size_t cacheSize;
     std::function<Value(const Key&)> getFunction;
     std::function<void(const Key &,const Value &)> evictionCallback;
 
+    size_t currentCacheSize;
     ContentSizes contentSizes;
 };

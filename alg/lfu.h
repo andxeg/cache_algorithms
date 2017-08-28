@@ -92,9 +92,11 @@ public:
         size_t result = 0;
      
         for (auto& element : lookup) {
-            result += contentSizes[element->first];
+            result += contentSizes[element.first];
         }
-     
+        
+        result = currentCacheSize;
+
         return result;
     }
 
@@ -163,6 +165,7 @@ private:
     std::unordered_map<Key, ItemMeta> lookup;
     LFUList lfuList;
     size_t cacheSize;
+    size_t currentCacheSize;
 
     std::function<void(const Key &,const Value &)> evictionCallback;
 

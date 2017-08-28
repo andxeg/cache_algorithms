@@ -88,8 +88,8 @@ public:
 
     size_t getCacheSize() {
         size_t result = 0;
-        // TODO
-        return result;
+        
+        return currentCacheSize;
     }
 
     void addCidSize(std::string cid, size_t size) {
@@ -130,6 +130,7 @@ private:
 
 private:
     size_t cacheSize;
+    size_t currentCacheSize;
     size_t splitPoint;
 
     LRUCache<Key, Value> top1Lru;

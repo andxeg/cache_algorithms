@@ -70,7 +70,7 @@ public:
     size_t getCacheSize() {
         size_t result = 0;
         // TODO 
-        return result;
+        return currentCacheSize;
     }
 
     void addCidSize(std::string cid, size_t size) {
@@ -85,6 +85,7 @@ public:
 
 private:
     size_t cacheSize;
+    size_t currentCacheSize;
 
     std::vector<LRUCache<Key, Value>> lruList;
 

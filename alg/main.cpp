@@ -32,6 +32,17 @@ T convertFromStringTo(std::string str) {
 }
 
 
+void printContentSizes(ContentSizes & contentSizes) {
+    for (auto& element : contentSizes) 
+        std::cout << element.first << ' ' << element.second << std::endl;
+}
+
+
+void printWarmUpItems(std::unordered_set<std::string> warmUpItems) {
+    for (auto& element : warmUpItems)
+        std::cout << element << std::endl;
+}
+
 template <typename Cache>
 bool canAppendIdToWarmUpItems(  std::unordered_set<std::string> & warmUpItems,
                                 std::string id,
@@ -61,47 +72,14 @@ template <typename Cache>
 int test(size_t cacheSize, const std::string& fileName) {
     size_t missed = 0;
     size_t count = 0;
-    size_t putCount = 0;
-    size_t cyclesCount = 0;
 
     Cache cache(cacheSize);
 
-    std::unordered_set<std::string> warmUpItems;
-
-    std::unordered_set<std::string> unusedItems;
-    std::unordered_set<std::string> evictedItems;
-    std::unordered_map<std::string, size_t> addedTime;
-    std::vector<size_t> holdTime;
-    size_t falseEvicted = 0;
     std::string message = "Start algo.\0";
     struct tm * now = print_current_data_and_time(message);
     int hour_start = now->tm_hour;
     int min_start = now->tm_min;
     int sec_start = now->tm_sec;
-
-    cache.setEvictionCallback([&](const std::string &key, const std::string &value) {
-        unusedItems.erase(key);
-
-        // calculate warmUpItems size 
-        size_t warmUpItemsSize = 0;
-        ContentSizes contentSizes = cache.getContentSizes();
-        for (auto&warmUpItem : warmUpItems ) {
-            warmUpItemsSize += contentSizes[warmUpItem];
-        }
-
-        if (warmUpItemsSize < cacheSize) {
-            return;
-        }
-
-        evictedItems.insert(key);
-
-        auto addedTimeIt = addedTime.find(key);
-        if (addedTimeIt != addedTime.end()) {
-            holdTime.push_back(putCount - addedTimeIt->second);
-            addedTime.erase(addedTimeIt);
-        }
-    });
-
 
 
     message = "After cache initialization.\0";
@@ -120,70 +98,22 @@ int test(size_t cacheSize, const std::string& fileName) {
         }
 
         cache.addCidSize(id, size);
+        
+        // std::cout << "Current cache size put -> " << cache.getCacheSize() << std::endl;
+        const std::string *value = cache.find(id);
 
-        if (canAppendIdToWarmUpItems<Cache>(warmUpItems, id, cacheSize, cache)) {
-            warmUpItems.insert(id);
-            unusedItems.insert(id);
-            cache.put(id, id);
-            ++cyclesCount;
-        } else {
-            const std::string *value = cache.find(id);
-
-            if (evictedItems.find(id) != evictedItems.end()) {
-                ++falseEvicted;
-                evictedItems.erase(id);
-
-                assert(value == nullptr);
-            }
-
-            if (value) {
-                unusedItems.erase(id);
-
-                auto addedTimeIt = addedTime.find(id);
-                if (addedTimeIt != addedTime.end()) {
-                    addedTime.erase(addedTimeIt);
-                }
-            } else {
-                ++missed;
-
-                unusedItems.insert(id);
-
-                value = cache.put(id, id);
-                addedTime[id] = putCount;
-                ++putCount;
-            }
-
-            if (*value != id) {
-                std::cout << "Invalid value " << *value << " " << id << "\n";
-                return 1;
-            }
-
-            ++count;
-
-            if (count % 1000 == 0) {
-              std::cout << "Process " << count << "\n";
-            }
-
-            ++cyclesCount;
+        if (!value) {
+            ++missed;
+            value = cache.put(id, id);
         }
+
+        ++count;
+
+        if (count % 1000 == 0) {
+          std::cout << "Process " << count << "\n";
+        }
+
     }
-
-    size_t medianHoldTime = 0;
-
-    if (!holdTime.empty()) {
-        auto middleIt = holdTime.begin() + holdTime.size() / 2;
-        std::nth_element(holdTime.begin(), middleIt, holdTime.end());
-        medianHoldTime = *middleIt;
-    }
-
-/*    std::cout << "Unused items count - " << unusedItems.size() << "\n";
-    std::cout << "False evicted count - " << falseEvicted << "\n";
-    std::cout << "Median hold time - " << medianHoldTime << "\n";
-    std::cout << "Cached items count - " << cache.size() << "\n";
-    std::cout << "Requests - " << count << "\n";
-    std::cout << "Misses - " << missed << "\n";
-    std::cout << "Hit rate - " << 100 * (count - missed) / float(count) << "\n";
-*/
 
     message = "Algorithm was finished.\0";
     now = print_current_data_and_time(message);
@@ -198,9 +128,10 @@ int test(size_t cacheSize, const std::string& fileName) {
     std::cout << std::endl;
 
     std::cout << "More precisely:" << std::endl;
-    std::cout << "Cycle -> " << cyclesCount << std::endl;
-    std::cout << "Requests without warming -> " << count << std::endl;
+    std::cout << "Cycle -> " << count << std::endl;
     std::cout << "Miss Count -> " << missed << std::endl;
+    std::cout << "Cache size -> " << cache.getCacheSize() << std::endl;
+    std::cout << "Cache size -> " << cache.size() << std::endl;
 
     return 0;
 }

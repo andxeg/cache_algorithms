@@ -42,7 +42,8 @@ public:
             requestsFileName(fileName),
             requestCount(0),
             missCount(0),
-            cyclesCount(0) {
+            cyclesCount(0),
+            currentCacheSize(0) {
 
         std::ifstream in(fileName);
         size_t count = 0;
@@ -79,6 +80,8 @@ public:
             PositionHolder posHolder = IdPositionHolderMap[id];
             currentPositionsQueue.push(posHolder);
             lookup.insert(id);
+            ++missCount;
+            currentCacheSize += contentSizes[id];
         }
 
         ++cyclesCount;
@@ -103,6 +106,7 @@ public:
                 PositionHolder posHolder = IdPositionHolderMap[id];
                 currentPositionsQueue.push(posHolder);
                 lookup.insert(id);
+                currentCacheSize += contentSizes[id];
             }
 
         }
@@ -112,7 +116,7 @@ public:
 
     float hitRate() const {
 //        std::cout << requestCount << " " << missCount << "\n";
-        return requestCount != 0 ? 100 * (requestCount - missCount) / float(requestCount) : -1;
+        return cyclesCount != 0 ? 100 * (cyclesCount - missCount) / float(cyclesCount) : -1;
     }
 
     void dump() const {
@@ -125,17 +129,15 @@ public:
     }
 
     size_t getCacheSize() {
-        size_t result = 0;
-
-        for (auto& element : lookup) {
-            result += contentSizes[element];
-        }
-
-        return result;
+        return currentCacheSize;
     }
 
     ContentSizes getContentSizes() {
         return contentSizes;
+    }
+
+    size_t size() {
+        return lookup.size();
     }
 
 private:
@@ -184,11 +186,13 @@ private:
         }
 
         lookup.erase(itemToRemove);
+        currentCacheSize -= contentSizes[itemToRemove];
     }
 
 // private:
 public:
     size_t cacheSize;
+    size_t currentCacheSize;
     std::string requestsFileName;
 
     typedef std::unordered_map<std::string, std::deque<size_t> > ItemPositions;
@@ -280,10 +284,9 @@ int main(int argc, const char* argv[]) {
 
     ContentSizes contentSizes = cache.getContentSizes();
 
-    //cache.dump();
-
     size_t count = 0;
 
+    bool warmCache = false;
     std::unordered_set<std::string> warmUpItems;
 
     std::ifstream in(fileName);
@@ -298,11 +301,14 @@ int main(int argc, const char* argv[]) {
             break;
         }
 
-        if (canAppendIdToWarmUpItems(warmUpItems, id, cacheSize, contentSizes)) {
+        if ((warmCache == false) && 
+                canAppendIdToWarmUpItems(warmUpItems, id, cacheSize, contentSizes)) {
+
             cache.warmUp(id);
             warmUpItems.insert(id);
         } else {
             // std::cout << "proccess" << std::endl;
+            warmCache = true;
             cache.process(id);
         }
 
@@ -327,6 +333,9 @@ int main(int argc, const char* argv[]) {
     std::cout << "Cycle -> " << cache.cyclesCount << std::endl;
     std::cout << "Requests without warming -> " << cache.requestCount << std::endl;
     std::cout << "Miss Count -> " << cache.missCount << std::endl;
+    std::cout << "Cache size -> " << cache.getCacheSize() << std::endl;
+    std::cout << "Cache size -> " << cache.size() << std::endl;
+    std::cout << "WarmUp size -> " << warmUpItems.size() << std::endl;
 
 
     // for (auto& element : cache.IdPositionHolderMap) 
