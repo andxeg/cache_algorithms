@@ -23,15 +23,6 @@
 typedef std::unordered_map<std::string, size_t> ContentSizes;
 
 
-template <typename T>
-T convertFromStringTo(std::string str) {
-    T val;
-    std::stringstream stream(str);
-    stream >> val;
-    return val;
-}
-
-
 void printContentSizes(ContentSizes & contentSizes) {
     for (auto& element : contentSizes) 
         std::cout << element.first << ' ' << element.second << std::endl;
@@ -42,31 +33,6 @@ void printWarmUpItems(std::unordered_set<std::string> warmUpItems) {
     for (auto& element : warmUpItems)
         std::cout << element << std::endl;
 }
-
-template <typename Cache>
-bool canAppendIdToWarmUpItems(  std::unordered_set<std::string> & warmUpItems,
-                                std::string id,
-                                size_t & cacheSize,
-                                Cache & cache)
-{
-    
-    ContentSizes contentSizes = cache.getContentSizes();
-
-    bool result = true;
-    size_t warmUpItemsSize = 0;
-    size_t idSize = contentSizes[id];
-
-    for (auto& warmUpItem : warmUpItems) {
-        warmUpItemsSize += contentSizes[warmUpItem];
-    }
-
-    if ((warmUpItemsSize + idSize) > cacheSize) {
-        result = false;
-    }
-
-    return result;
-}
-
 
 template <typename Cache>
 int test(size_t cacheSize, const std::string& fileName) {

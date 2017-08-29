@@ -94,10 +94,11 @@ public:
 
     void addCidSize(std::string cid, size_t size) {
         ContentSizes::iterator it = contentSizes.find(cid);
-        if (it != contentSizes.end())
-            std::cout << "Size is repeated. Was -> " <<  it->second
+        if (it != contentSizes.end() && it->second != size) {
+            std::cout << "Another size for content. Was -> " <<  it->second
                 << " now -> "<< size 
                 << " for cid -> " << cid << std::endl;
+        }
 
         contentSizes[cid] = size;
     }

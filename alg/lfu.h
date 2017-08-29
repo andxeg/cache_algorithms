@@ -26,7 +26,8 @@ class LFUCache {
 
 public:
     explicit LFUCache(size_t size) :
-            cacheSize(size < 1 ? 1 : size) {}
+            cacheSize(size < 1 ? 1 : size),
+            currentCacheSize(0) {}
 
     Value* find(const Key &key) {
         auto it = lookup.find(key);
@@ -48,11 +49,17 @@ public:
             lfuList.push_back(ItemList());
         }
 
-        makeSizeInvariant(cacheSize - 1);
+        size_t cidSize = contentSizes[key];
+        if (cidSize > cacheSize)
+            return nullptr;
+
+        makeSizeInvariant(cacheSize - cidSize);
 
         lfuList.front().push_back(std::make_pair(key, value));
         auto addedItemIt = --lfuList.front().end();
         lookup[key] = ItemMeta(addedItemIt, lfuList.begin());
+
+        currentCacheSize += cidSize;
 
         return &addedItemIt->second;
     }
@@ -89,30 +96,24 @@ public:
     }
 
     size_t getCacheSize() {
-        size_t result = 0;
-     
-        for (auto& element : lookup) {
-            result += contentSizes[element.first];
-        }
-        
-        result = currentCacheSize;
-
-        return result;
+        return currentCacheSize;
     }
 
     void addCidSize(std::string cid, size_t size) {
         ContentSizes::iterator it = contentSizes.find(cid);
-        if (it != contentSizes.end())
+        if (it != contentSizes.end() && it->second != size) {
             std::cout << "Size is repeated. Was -> " <<  it->second
                 << " now -> "<< size 
                 << " for cid -> " << cid << std::endl;
 
+        }
+        
         contentSizes[cid] = size;
     }
 
 private:
     void makeSizeInvariant(size_t size) {
-        while (lookup.size() > size) {
+        while (getCacheSize() > size) {
             auto lfuIt = lfuList.begin();
             while (lfuIt->empty() && lfuIt != lfuList.end()) {
                 ++lfuIt;
@@ -127,6 +128,9 @@ private:
             assert(!lfuIt->empty());
 
             const Key &key = lfuIt->front().first;
+
+            currentCacheSize -= contentSizes[key];
+
             lookup.erase(key);
 
             lfuIt->pop_front();
