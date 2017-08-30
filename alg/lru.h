@@ -87,14 +87,6 @@ public:
     }
 
     size_t getCacheSize() {
-        
-        // size_t result = 0;
-
-        // for (auto& element : lookup) {
-        //     result += contentSizes[element.first];
-        // }
-
-        // return result;
         return currentCacheSize;
     }
 
@@ -118,8 +110,6 @@ private:
 
             size_t cidSize = contentSizes[lruList.front().first];
             currentCacheSize -= cidSize;
-
-            // std::cout << "Current cache size erase -> " << currentCacheSize << std::endl;
 
             lookup.erase(lruList.front().first);
 

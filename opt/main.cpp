@@ -11,12 +11,9 @@
 #include <algorithm>
 #include <unordered_map>
 #include <unordered_set>
-
 #include "timestamps.h"
 
-
 typedef std::unordered_map<std::string, size_t> ContentSizes;
-
 
 template<typename T>
 class custom_priority_queue : public std::priority_queue<T, std::vector<T>>
@@ -34,19 +31,17 @@ public:
     }
 };
 
-
 class OptCache {
 public:
     OptCache(size_t size, const std::string &fileName) :
             cacheSize(size),
             requestsFileName(fileName),
-            requestCount(0),
             missCount(0),
             cyclesCount(0),
-            currentCacheSize(0) {
+            currentCacheSize(0) 
+    {
 
         std::ifstream in(fileName);
-        size_t count = 0;
         size_t pos = 0;
 
         while (true) {
@@ -61,50 +56,70 @@ public:
             }
 
             itemPositions[id].push_back(pos);
-
             auto it = itemPositions.find(id);
             if (it->second.size() == 1) {
                 PositionHolder posHolder = PositionHolder(pos, it);
                 IdPositionHolderMap[id] = posHolder;
-                positionsQueue.push(posHolder);
                 contentSizes[id] = size;
             }
-
             ++pos;
+        }
 
+        pos += 10;
+        for (auto & item : itemPositions) {
+            auto & positionList = item.second;
+            positionList.push_back(pos);
         }
     }
 
-    size_t warmUp(const std::string &id) {
-        if (lookup.find(id) == lookup.end()) {
-            PositionHolder posHolder = IdPositionHolderMap[id];
-            currentPositionsQueue.push(posHolder);
-            lookup.insert(id);
-            ++missCount;
-            currentCacheSize += contentSizes[id];
+    void modifyPositionHolder(const std::string & id) {
+        auto iter = itemPositions.find(id);
+        auto & positionList = iter->second;
+        if (positionList.size() >= 2) {
+            positionList.pop_front();
+            auto position = positionList.front();
+            if (lookup.find(id) != lookup.end()) {
+                PositionHolder oldPosHolder = IdPositionHolderMap[id];
+                if (!currentPositionsQueue.remove(oldPosHolder))
+                    std::cout << "Error modify" << std::endl;
+            }
+            PositionHolder newPosHolder = PositionHolder(position, iter);
+            IdPositionHolderMap[id] = newPosHolder;
         }
+    }
+
+    bool find(const std::string & id) {
+        if (lookup.find(id) == lookup.end())
+            return false;
+
+        // modify position holder for id
+        modifyPositionHolder(id);
+
+        PositionHolder newPosHolder = IdPositionHolderMap[id];
+        currentPositionsQueue.push(newPosHolder);
 
         ++cyclesCount;
 
-        return lookup.size();
+        return true;
     }
 
-    void process(const std::string& id) {
-        ++requestCount;
-
+    void process(const std::string & id) {        
         if (lookup.find(id) == lookup.end()) {
             ++missCount;
             
-            if (contentSizes[id] < cacheSize) {
-                size_t idSize = contentSizes[id];
+            size_t idSize = contentSizes[id];
+
+            if (idSize < cacheSize) {
                 
                 while ((idSize + getCacheSize()) > cacheSize) {
                     freeUpSpace();
-                    // std::cout << getCacheSize() << std::endl;
                 }
 
+                modifyPositionHolder(id);
+                
                 PositionHolder posHolder = IdPositionHolderMap[id];
                 currentPositionsQueue.push(posHolder);
+
                 lookup.insert(id);
                 currentCacheSize += contentSizes[id];
             }
@@ -115,17 +130,7 @@ public:
     }
 
     float hitRate() const {
-//        std::cout << requestCount << " " << missCount << "\n";
         return cyclesCount != 0 ? 100 * (cyclesCount - missCount) / float(cyclesCount) : -1;
-    }
-
-    void dump() const {
-        std::cout << "Positions\n";
-        for (auto& positions : itemPositions) {
-            std::cout << positions.first << "\n";
-            std::copy(positions.second.begin(), positions.second.end(), std::ostream_iterator<size_t>(std::cout, " "));
-            std::cout << "\n";
-        }
     }
 
     size_t getCacheSize() {
@@ -140,57 +145,25 @@ public:
         return lookup.size();
     }
 
+    size_t getCyclesCount() {
+        return cyclesCount;
+    }
+
+    size_t getMissCount() {
+        return missCount;
+    }
+
 private:
     void freeUpSpace() {
         std::string itemToRemove;
-        size_t maxPos = 0;
-
-        if (positionsQueue.empty()) {
-            itemToRemove = *lookup.begin();
-        } else {
-            const PositionHolder& maxPosition = currentPositionsQueue.top();
-            itemToRemove = maxPosition.it->first;
-            auto& positionList = maxPosition.it->second;
-
-            // std::cout <<  "item to remove -> " << itemToRemove << std::endl;
-            
-            // str::string cid = itemToRemove;
-            
-            // while (cid == itemToRemove) {
-
-            //     currentPositionsQueue.remove(maxPosition);
-            // }
-
-            currentPositionsQueue.remove(maxPosition);
-
-            if (positionList.size() >= 2) {
-                /* OLD CODE
-                auto it = IdPositionHolderMap.find(itemToRemove);
-                if (it != IdPositionHolderMap.end()) {
-                    PositionHolder newPosHolder = PositionHolder(positionList.front(), maxPosition.it);
-                    positionList.pop_front();
-                    IdPositionHolderMap.erase(it);
-                    IdPositionHolderMap[itemToRemove] = newPosHolder;
-                }
-                */
-
-                auto iter = itemPositions.find(itemToRemove);
-
-                positionList.pop_front();
-                PositionHolder newPosHolder = PositionHolder(positionList.front(), iter);
-
-                auto it = IdPositionHolderMap.find(itemToRemove);
-                IdPositionHolderMap.erase(it);
-                IdPositionHolderMap[itemToRemove] = newPosHolder;
-            }
-        }
-
-        lookup.erase(itemToRemove);
+        const PositionHolder& maxPosition = currentPositionsQueue.top();
+        itemToRemove = maxPosition.it->first;
+        currentPositionsQueue.remove(maxPosition);
         currentCacheSize -= contentSizes[itemToRemove];
+        lookup.erase(itemToRemove);
     }
 
-// private:
-public:
+private:
     size_t cacheSize;
     size_t currentCacheSize;
     std::string requestsFileName;
@@ -200,7 +173,6 @@ public:
 
     ContentSizes contentSizes;
 
-    size_t requestCount;
     size_t missCount;
 
     typedef std::unordered_set<std::string> Lookup;
@@ -211,7 +183,6 @@ public:
     struct PositionHolder {
         size_t position;
         ItemPositions::iterator it;
-
 
         PositionHolder(){}
 
@@ -236,40 +207,15 @@ public:
     };
 
     std::priority_queue<PositionHolder> positionsQueue;
-
     custom_priority_queue<PositionHolder> currentPositionsQueue;
-
     std::unordered_map<std::string, PositionHolder> IdPositionHolderMap;
-
 };
-
-
-bool canAppendIdToWarmUpItems(  std::unordered_set<std::string> & warmUpItems,
-                                std::string id,
-                                size_t & cacheSize,
-                                ContentSizes & contentSizes)
-{
-    bool result = true;
-    size_t warmUpItemsSize = 0;
-    size_t idSize = contentSizes[id];
-
-    for (auto& warmUpItem : warmUpItems) {
-        warmUpItemsSize += contentSizes[warmUpItem];
-    }
-
-    if ((warmUpItemsSize + idSize) > cacheSize) {
-        result = false;
-    }
-
-    return result;
-}
 
 
 int main(int argc, const char* argv[]) {
     std::string::size_type sz = 0;
     size_t cacheSize = std::stoll(std::string(argv[1]), &sz, 0);
     std::string fileName = argv[2];
-
 
     std::string message = "Start algo.\0";
     struct tm * now = print_current_data_and_time(message);
@@ -285,11 +231,8 @@ int main(int argc, const char* argv[]) {
     ContentSizes contentSizes = cache.getContentSizes();
 
     size_t count = 0;
-
-    bool warmCache = false;
-    std::unordered_set<std::string> warmUpItems;
-
     std::ifstream in(fileName);
+
     while (true) {
         std::string id;
         size_t size;
@@ -300,17 +243,11 @@ int main(int argc, const char* argv[]) {
         if (in.eof()) {
             break;
         }
+        
+        bool value = cache.find(id);
 
-        if ((warmCache == false) && 
-                canAppendIdToWarmUpItems(warmUpItems, id, cacheSize, contentSizes)) {
-
-            cache.warmUp(id);
-            warmUpItems.insert(id);
-        } else {
-            // std::cout << "proccess" << std::endl;
-            warmCache = true;
+        if (value == false)
             cache.process(id);
-        }
 
         if (++count % 1000 == 0) {
            std::cout << "Process " << count << "\n";
@@ -321,7 +258,10 @@ int main(int argc, const char* argv[]) {
     message = "Algorithm was finished.\0";
     now = print_current_data_and_time(message);
     int time = now->tm_hour * 3600 + now->tm_min * 60 + now->tm_sec - hour_start * 3600 - min_start * 60 - sec_start;
-    std::cout << "Algorithm work time -> " <<  time / 3600  << "  hours " << (time % 3600) / 60  << " mins " << (time % 3600) % 60 << " secs" << std::endl;
+    std::cout << "Algorithm work time -> " <<  
+                time / 3600  << "  hours " << 
+                (time % 3600) / 60  << " mins " << 
+                (time % 3600) % 60 << " secs" << std::endl;
 
     std::cout << "\nAlgorithm results:\n";
     std::cout << "Cache size -> " << cacheSize << " Kbyte" << std::endl;
@@ -330,16 +270,10 @@ int main(int argc, const char* argv[]) {
     std::cout << std::endl;
 
     std::cout << "More precisely:" << std::endl;
-    std::cout << "Cycle -> " << cache.cyclesCount << std::endl;
-    std::cout << "Requests without warming -> " << cache.requestCount << std::endl;
-    std::cout << "Miss Count -> " << cache.missCount << std::endl;
+    std::cout << "Cycle -> " << cache.getCyclesCount() << std::endl;
+    std::cout << "Miss Count -> " << cache.getMissCount() << std::endl;
     std::cout << "Cache size -> " << cache.getCacheSize() << std::endl;
     std::cout << "Cache size -> " << cache.size() << std::endl;
-    std::cout << "WarmUp size -> " << warmUpItems.size() << std::endl;
-
-
-    // for (auto& element : cache.IdPositionHolderMap) 
-    //     std::cout <<  element.first << ' ' << element.second << std::endl;
 
     return 0;
 }
