@@ -68,8 +68,6 @@ public:
     }
 
     size_t getCacheSize() {
-        size_t result = 0;
-        // TODO 
         return currentCacheSize;
     }
 

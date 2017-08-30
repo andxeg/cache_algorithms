@@ -31,14 +31,17 @@ public:
     }
 };
 
+
 class OptCache {
+    typedef std::unordered_set<std::string> Lookup;
+    typedef std::unordered_map<std::string, std::deque<size_t> > ItemPositions;
 public:
     OptCache(size_t size, const std::string &fileName) :
             cacheSize(size),
-            requestsFileName(fileName),
             missCount(0),
             cyclesCount(0),
-            currentCacheSize(0) 
+            currentCacheSize(0),
+            requestsFileName(fileName)
     {
 
         std::ifstream in(fileName);
@@ -165,20 +168,14 @@ private:
 
 private:
     size_t cacheSize;
+    size_t missCount;
+    size_t cyclesCount;
     size_t currentCacheSize;
     std::string requestsFileName;
-
-    typedef std::unordered_map<std::string, std::deque<size_t> > ItemPositions;
-    ItemPositions itemPositions;
-
     ContentSizes contentSizes;
 
-    size_t missCount;
-
-    typedef std::unordered_set<std::string> Lookup;
+    ItemPositions itemPositions;
     Lookup lookup;
-
-    size_t cyclesCount;
 
     struct PositionHolder {
         size_t position;

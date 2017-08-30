@@ -11,7 +11,8 @@ class FifoCache {
     typedef std::unordered_map<std::string, size_t> ContentSizes;
 public:
     explicit FifoCache(size_t size) :
-            cacheSize(size < 1 ? 1 : size) {}
+            cacheSize(size < 1 ? 1 : size),
+            currentCacheSize(0) {}
 
     Value* find(const Key &key) const {
         auto it = lookup.find(key);
@@ -29,17 +30,21 @@ public:
             return result;
         }
 
-        makeSizeInvariant(cacheSize - 1);
+        size_t cidSize = contentSizes[key];
+
+        if (cidSize > cacheSize)
+            return nullptr;
+
+        makeSizeInvariant(cacheSize - cidSize);
 
         fifo.push_back(std::make_pair(key, value));
 
         auto addedItemIt = --fifo.end();
         lookup[key] = addedItemIt;
 
-        assert(lookup.find(fifo.front().first) != lookup.end());
+        currentCacheSize += cidSize;
 
         assert(lookup.find(fifo.front().first) != lookup.end());
-
         return &addedItemIt->second;
     }
 
@@ -74,15 +79,7 @@ public:
     }
 
     size_t getCacheSize() {
-        size_t result = 0;
-        
-        for (auto& element : lookup) {
-            result += contentSizes[element.first];
-        }
-        
-        result = currentCacheSize;
-
-        return result;
+        return currentCacheSize;
     }
 
     void addCidSize(std::string cid, size_t size) {
@@ -98,13 +95,12 @@ public:
 
 private:
     void makeSizeInvariant(size_t size) {
-        while (lookup.size() > size) {
-            if (evictionCallback) {
-                evictionCallback(fifo.front().first, fifo.front().second);
-            }
-
-            lookup.erase(fifo.front().first);
+        while (getCacheSize() > size) {
+            auto cid = fifo.front().first;
+            auto cidSize = contentSizes[cid];
+            lookup.erase(cid);
             fifo.pop_front();
+            currentCacheSize -= cidSize;
         }
     }
 

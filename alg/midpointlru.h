@@ -73,9 +73,7 @@ public:
         return contentSizes;
     }
 
-    size_t getCacheSize() {
-        size_t result = 0;
-        
+    size_t getCacheSize() {        
         return currentCacheSize;
     }
 
