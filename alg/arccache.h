@@ -82,6 +82,10 @@ public:
         return top1Lru.size() + top2Lru.size();
     }
 
+    size_t elementsCount() const {
+        return 0;
+    }
+
     ContentSizes getContentSizes() {
         return contentSizes;
     }

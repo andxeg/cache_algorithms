@@ -65,6 +65,10 @@ public:
         return lookup.size();
     }
 
+    size_t elementsCount() const {
+        return 0;
+    }
+
     void setCacheSize(size_t size) {
         cacheSize = size;
         makeSizeInvariant(cacheSize);
@@ -96,6 +100,10 @@ public:
 private:
     void makeSizeInvariant(size_t size) {
         while (getCacheSize() > size) {
+            if (evictionCallback) {
+                evictionCallback(fifo.front().first, fifo.front().second);
+            }
+
             auto cid = fifo.front().first;
             auto cidSize = contentSizes[cid];
             lookup.erase(cid);

@@ -97,7 +97,7 @@ int test(size_t cacheSize, const std::string& fileName) {
     std::cout << "Cycle -> " << count << std::endl;
     std::cout << "Miss Count -> " << missed << std::endl;
     std::cout << "Cache size -> " << cache.getCacheSize() << std::endl;
-    std::cout << "Cache size -> " << cache.size() << std::endl;
+    std::cout << "Cache size -> " << cache.elementsCount() << std::endl;
 
     return 0;
 }

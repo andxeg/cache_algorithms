@@ -61,6 +61,10 @@ public:
         return aIn.size() + mainCache.size();
     }
 
+    size_t elementsCount() const {
+        return 0;
+    }
+
     void setEvictionCallback(std::function<void(const Key &,const Value &)> callback) {
         evictionCallback = callback;
         mainCache.setEvictionCallback(callback);

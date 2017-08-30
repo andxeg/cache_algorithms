@@ -135,6 +135,10 @@ public:
         return sz;
     }
 
+    size_t elementsCount() const {
+        return 0;
+    }
+
     void setEvictionCallback(std::function<void(const Key &,const Value &)> callback) {
         evictionCallback = callback;
     }

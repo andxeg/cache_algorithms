@@ -64,6 +64,10 @@ public:
         return tail.size() + head.size();
     }
 
+    size_t elementsCount() const {
+        return 0;
+    }
+
     void setCacheSize(size_t size) {
         cacheSize = size;
         tail.setCacheSize(cacheSize - head.size());

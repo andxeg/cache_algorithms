@@ -69,6 +69,10 @@ public:
         return lookup.size();
     }
 
+    size_t elementsCount() const {
+        return lookup.size();
+    }
+
     void setCacheSize(size_t size) {
         cacheSize = size;
         makeSizeInvariant(cacheSize);
