@@ -12,8 +12,9 @@ class MidPointLRUCache {
 public:
     explicit MidPointLRUCache(size_t size, float point = 0.85) :
             cacheSize(size < 2 ? 2 : size),
+            currentCacheSize(0),
             headSize(ceil(cacheSize * point)),
-            tail(cacheSize),
+            tail(cacheSize - headSize),
             head(headSize) {
         head.setEvictionCallback([&](const Key &key, const Value &value) {
             tail.put(key, value);
@@ -30,8 +31,8 @@ public:
 
         if (value) {
             Value tmpValue = *value;
-            value = head.put(key, tmpValue);
             tail.erase(key);
+            value = head.put(key, tmpValue);
             return value;
         }
 
@@ -44,7 +45,7 @@ public:
             return result;
         }
 
-        tail.setCacheSize(cacheSize - head.size());
+        // tail.setCacheSize(cacheSize - head.size());
         return tail.put(key, value);
     }
 
@@ -65,7 +66,7 @@ public:
     }
 
     size_t elementsCount() const {
-        return 0;
+        return head.elementsCount() + tail.elementsCount();
     }
 
     void setCacheSize(size_t size) {
@@ -78,7 +79,7 @@ public:
     }
 
     size_t getCacheSize() {        
-        return currentCacheSize;
+        return head.getCacheSize() + tail.getCacheSize();
     }
 
     void addCidSize(std::string cid, size_t size) {
@@ -90,6 +91,9 @@ public:
         }
 
         contentSizes[cid] = size;
+
+        head.addCidSize(cid, size);
+        tail.addCidSize(cid, size);
     }
 
 private:

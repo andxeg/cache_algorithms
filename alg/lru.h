@@ -55,6 +55,9 @@ public:
             return false;
         }
 
+        size_t cidSize = contentSizes[key];
+        currentCacheSize -= cidSize;
+
         lruList.erase(it->second);
         lookup.erase(it);
 
@@ -66,7 +69,10 @@ public:
     }
 
     size_t size() const {
-        return lookup.size();
+        // limit of cache size
+        return cacheSize;
+
+        // return lookup.size(); previous code
     }
 
     size_t elementsCount() const {
