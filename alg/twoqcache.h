@@ -3,19 +3,24 @@
 #include "fifocache.h"
 #include "lru.h"
 
+#include <cmath>
 #include <cstdlib>
 
 template <typename Key, typename Value>
 class TwoQCache {
     typedef std::unordered_map<std::string, size_t> ContentSizes;
 public:
-    explicit TwoQCache(size_t size, float mainCacheFactor = 0.75, float outCacheFactor = 5) :
+    explicit TwoQCache(size_t size, float mainCacheFactor = 0.60, 
+                                    float outCacheFactor = 0.20,
+                                    float inCacheFactor = 0.20) :
             cacheSize(size < 2 ? 2 : size),
-            mainCache(cacheSize * mainCacheFactor),
-            aIn(size * (1 - mainCacheFactor)),
-            aOut(cacheSize * outCacheFactor) {
+            currentCacheSize(0),
+            mainCache(floor(cacheSize * mainCacheFactor)),
+            aIn(floor(cacheSize * inCacheFactor)),
+            aOut(floor(cacheSize * outCacheFactor)) 
+    {
         aIn.setEvictionCallback([&](const Key &key, const Value &value) {
-            aOut.put(key, 0);
+            aOut.put(key, value);
             if (evictionCallback) {
                 evictionCallback(key, value);
             }
@@ -28,6 +33,14 @@ public:
         if (value) {
             return value;
         }
+
+        value = aOut.find(key);
+
+        if (value) {
+            Value tmpValue = *value;
+            aOut.erase(key);
+            return mainCache.put(key, tmpValue);
+        }        
 
         return aIn.find(key);
     }
@@ -44,7 +57,6 @@ public:
             return mainCache.put(key, value);
         }
 
-        aIn.setCacheSize(cacheSize - mainCache.size());
         return aIn.put(key, value);
     }
 
@@ -62,7 +74,9 @@ public:
     }
 
     size_t elementsCount() const {
-        return 0;
+        return  aIn.elementsCount() + 
+                aOut.elementsCount() + 
+                mainCache.elementsCount();
     }
 
     void setEvictionCallback(std::function<void(const Key &,const Value &)> callback) {
@@ -75,6 +89,11 @@ public:
     }
 
     size_t getCacheSize() {
+        currentCacheSize = 0;
+        currentCacheSize += aIn.getCacheSize() + 
+                            aOut.getCacheSize() + 
+                            mainCache.getCacheSize();
+
         return currentCacheSize;
     }
 
@@ -87,6 +106,10 @@ public:
         }
 
         contentSizes[cid] = size;
+
+        aIn.addCidSize(cid, size);
+        aOut.addCidSize(cid, size);
+        mainCache.addCidSize(cid, size);
     }
 
 private:
@@ -95,7 +118,7 @@ private:
 
     LRUCache<Key, Value> mainCache;
     FifoCache<Key, Value> aIn;
-    FifoCache<Key, char> aOut;
+    FifoCache<Key, Value> aOut;
 
     std::function<void(const Key &,const Value &)> evictionCallback;
 

@@ -55,6 +55,9 @@ public:
             return false;
         }
 
+        size_t cidSize = contentSizes[key];
+        currentCacheSize -= cidSize;
+        
         fifo.erase(it->second);
         lookup.erase(it);
 
@@ -66,7 +69,7 @@ public:
     }
 
     size_t elementsCount() const {
-        return 0;
+        return lookup.size();
     }
 
     void setCacheSize(size_t size) {
