@@ -4,18 +4,19 @@
 
 #include <cstdlib>
 #include <vector>
+#include <cmath>
 
 template <typename Key, typename Value>
 class SNLRUCache {
     typedef std::unordered_map<std::string, size_t> ContentSizes;
 public:
     explicit SNLRUCache(size_t size, size_t lruCount = 4) :
-            cacheSize(size < lruCount ? lruCount : size) {
+            cacheSize(size < lruCount ? lruCount : size),
+            currentCacheSize(0) {
         for (size_t index = 0; index < lruCount; ++index) {
-            lruList.push_back(LRUCache<Key, Value>(cacheSize));
+            lruList.push_back(LRUCache<Key, Value>(floor(float(cacheSize) / 4)));
             if (index != 0) {
                 lruList.back().setEvictionCallback([=](const Key &key, const Value &value) {
-                    this->lruList[index - 1].setCacheSize(cacheSize - this->size() + this->lruList[index - 1].size() + 1);
                     this->lruList[index - 1].put(key, value);
                 });
             }
@@ -26,7 +27,6 @@ public:
         for (size_t index = 0; index < lruList.size() - 1; ++index) {
             Value *value = lruList[index].find(key);
             if (value) {
-                lruList[index + 1].setCacheSize(cacheSize - size() + this->lruList[index].size() + 1);
                 value = lruList[index + 1].put(key, *value);
                 lruList[index].erase(key);
                 return value;
@@ -42,7 +42,6 @@ public:
             return result;
         }
 
-        lruList.front().setCacheSize(cacheSize - size() + lruList.front().size());
         return lruList.front().put(key, value);
     }
 
@@ -60,7 +59,12 @@ public:
     }
 
     size_t elementsCount() const {
-        return 0;
+        size_t result = 0;
+        for (auto & lruCache : lruList) {
+            result += lruCache.elementsCount();
+        }
+
+        return result;
     }
 
     void setEvictionCallback(std::function<void(const Key &,const Value &)> callback) {
@@ -72,6 +76,10 @@ public:
     }
 
     size_t getCacheSize() {
+        currentCacheSize = 0;
+        for (auto & lruCache : lruList) {
+            currentCacheSize += lruCache.getCacheSize();
+        }
         return currentCacheSize;
     }
 
@@ -84,6 +92,11 @@ public:
         }
 
         contentSizes[cid] = size;
+
+        for (auto & lruCache : lruList) {
+            lruCache.addCidSize(cid, size);
+        }
+
     }
 
 private:

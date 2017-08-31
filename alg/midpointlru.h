@@ -45,7 +45,6 @@ public:
             return result;
         }
 
-        // tail.setCacheSize(cacheSize - head.size());
         return tail.put(key, value);
     }
 
@@ -78,8 +77,9 @@ public:
         return contentSizes;
     }
 
-    size_t getCacheSize() {        
-        return head.getCacheSize() + tail.getCacheSize();
+    size_t getCacheSize() {
+        currentCacheSize = head.getCacheSize() + tail.getCacheSize();
+        return currentCacheSize;
     }
 
     void addCidSize(std::string cid, size_t size) {
