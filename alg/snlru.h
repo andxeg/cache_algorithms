@@ -14,7 +14,7 @@ public:
             cacheSize(size < lruCount ? lruCount : size),
             currentCacheSize(0) {
         for (size_t index = 0; index < lruCount; ++index) {
-            lruList.push_back(LRUCache<Key, Value>(floor(float(cacheSize) / 4)));
+            lruList.push_back(LRUCache<Key, Value>(floor(float(cacheSize) / lruCount)));
             if (index != 0) {
                 lruList.back().setEvictionCallback([=](const Key &key, const Value &value) {
                     this->lruList[index - 1].put(key, value);

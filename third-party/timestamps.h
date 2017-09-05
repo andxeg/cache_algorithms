@@ -1,6 +1,20 @@
+#pragma once
+
 #include <ctime>
 #include <sstream>
 #include <iostream>
+
+
+
+int comparisonWithEpsilon(const size_t & first, const size_t & second, const size_t & epsilon) {
+    if (abs(first - second) <= epsilon)
+        return 0;
+
+    if (first > second)
+        return 1;
+    else
+        return -1;
+}
 
 
 template <typename T>
