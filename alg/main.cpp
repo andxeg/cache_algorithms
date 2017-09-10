@@ -7,6 +7,8 @@
 #include "snlru.h"
 #include "twoqcache.h"
 
+#include "pop_caching.h"
+
 #include <cmath>
 #include <cassert>
 #include <cstdlib>
@@ -115,6 +117,10 @@ int main(int argc, const char* argv[]) {
 
     if (cacheType == "lru") {
         return test<LRUCache<std::string, std::string>>(cacheSize, fileName);
+    }
+
+    if (cacheType == "pop_caching") {
+        return test<PoPCaching>(cacheSize, fileName);
     }
 
     if (cacheType == "lfu") {
