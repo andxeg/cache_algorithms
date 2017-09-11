@@ -19,7 +19,7 @@ public:
             bottom1Lru(cacheSize),
             bottom2Lru(cacheSize) {}
 
-    Value* find(const Key &key) {
+    Value* find(const Key &key, const size_t & current_time = 0) {
         Value *value = top2Lru.find(key);
         if (value) {
             return value;

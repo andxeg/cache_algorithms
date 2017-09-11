@@ -23,7 +23,7 @@ public:
         }
     }
 
-    Value* find(const Key &key) {
+    Value* find(const Key &key, const size_t & current_time = 0) {
         for (size_t index = 0; index < lruList.size() - 1; ++index) {
             Value *value = lruList[index].find(key);
             if (value) {

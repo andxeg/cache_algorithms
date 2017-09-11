@@ -21,7 +21,7 @@ public:
         });
     }
 
-    Value* find(const Key &key) {
+    Value* find(const Key &key, const size_t & current_time = 0) {
         Value *value = head.find(key);
         if (value) {
             return value;

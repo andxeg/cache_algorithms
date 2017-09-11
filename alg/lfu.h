@@ -29,7 +29,7 @@ public:
             cacheSize(size < 1 ? 1 : size),
             currentCacheSize(0) {}
 
-    Value* find(const Key &key) {
+    Value* find(const Key &key, const size_t & current_time = 0) {
         auto it = lookup.find(key);
 
         if (it == lookup.end()) {
