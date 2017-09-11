@@ -59,6 +59,21 @@ public:
     bool overflow(const double & z1, const double & z2) {
         return capacity >= z1 * pow(2, z2 * level);
     }
+
+    size_t get_estimation() {
+        float result = static_cast<float>(sum_of_request_rate);
+        result = std::ceil(result / capacity);
+        return static_cast<size_t>(result);
+    }
+
+    void add_capacity(const size_t & delta) {
+        capacity += delta;
+    }
+
+    void add_sum_of_requests(const size_t & delta) {
+        sum_of_request_rate += delta;
+    }
+
 private:
     size_t level; 
     
@@ -98,7 +113,7 @@ public:
         return hypercube;
     }
 
-    void split(HyperCube hypercube) {
+    void split(HyperCube & hypercube) {
         // TODO
     }
 
@@ -212,7 +227,7 @@ public:
         content_features[cid].update_features(current_time);
 
         update_evaluations();
-        learn_popularity(cid);
+        learn_popularity(cid, current_time);
 
         auto it = lookup.find(cid);
         if (it == lookup.end())
@@ -260,7 +275,7 @@ public:
         for (auto & element : lookup) {
             auto & cid = element.first;
             EstimationHolder old_holder = cidEstimationHolderMap[cid];
-            if (!estimations.remove(old_holder)) {
+            if (estimations.remove(old_holder) == false) {
                 std::cout << "Error in removing holder from queue" << std::endl;
             }
 
@@ -271,15 +286,30 @@ public:
         }
     }
 
-    void learn_popularity(const std::string & cid) {
-        // TODO
+    void learn_popularity(const std::string & cid,
+                            const size_t & current_time)
+    {
+        Features features = content_features[cid];
+        if (features.popularity_revealed(current_time, learn_limit) == false) 
+            return;
+
+        // NOTE: learn must call only one time or many time if time >= learn_limit
+
+        ContextVector context_vector = features.get_context_vector();
+        HyperCube hypercube = contextSpace.find_hypercube(context_vector);
+
+        size_t total_requests = features.get_total_requests();
+        hypercube.add_capacity(1);
+        hypercube.add_sum_of_requests(total_requests);
+        contextSpace.split(hypercube);
     }
 
-
     size_t estimate_popularity(const std::string & cid) {
-        // TODO
-
-        return 0;
+        Features features = content_features[cid];
+        ContextVector context_vector = features.get_context_vector();
+        HyperCube hypercube = contextSpace.find_hypercube(context_vector);
+        size_t estimation = hypercube.get_estimation();
+        return estimation;
     }
 
 private:
