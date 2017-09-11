@@ -74,6 +74,14 @@ public:
         sum_of_request_rate += delta;
     }
 
+    size_t get_capacity() {
+        return capacity;
+    }
+
+    size_t get_sum_of_request() {
+        return sum_of_request_rate;
+    }
+
 private:
     size_t level; 
     
@@ -107,7 +115,7 @@ public:
     }
 
     HyperCube find_hypercube(ContextVector & x) {
-        // TODO
+        // TODO 
         Bounds bounds;
         HyperCube hypercube(0, 1, 0, bounds);
         return hypercube;
@@ -237,7 +245,60 @@ public:
     }
 
     std::string * put(const std::string & cid, const std::string & value) {
-        // TODO
+        size_t cid_size = contentSizes[cid];
+        size_t popularity_estimation = estimate_popularity(cid);
+
+        if (cid_size < cacheSize) {    
+            size_t sum_popularity = 0;
+            std::unordered_map<std::string, size_t> evicted_elements;
+
+            // evict old elements
+            while ((getCacheSize() + cid_size) > cacheSize) {
+                EstimationHolder least_popular = estimations.top();
+                std::string least_cid = least_popular.cid;
+                size_t least_estimation = least_popular.estimation;
+                evicted_elements[least_cid] = least_estimation;
+                sum_popularity += least_estimation;
+
+                if (estimations.remove(least_popular) == false) {
+                   std::cout << "Error in removing holder from queue" << std::endl;
+                }
+                
+                currentCacheSize -= contentSizes[least_cid];
+                cidEstimationHolderMap.erase(cid);
+                lookup.erase(least_cid);
+            }
+
+            // compare sum popularity with popularity of the new content
+            size_t compare_coeff = 2;
+            if (popularity_estimation > compare_coeff * sum_popularity) {   
+                EstimationHolder new_holder = EstimationHolder(cid, 
+                                                popularity_estimation);
+
+                estimations.push(new_holder);
+                currentCacheSize += contentSizes[cid];
+                std::pair<std::string, std::string> pair = std::make_pair(cid, cid);
+                lookup.insert(pair);
+                return &(lookup.find(cid)->second);
+            } 
+
+            // if popularity of the new content is not sufficient 
+            // then return previous state
+            for (auto & element : evicted_elements) {
+                std::string element_cid = element.first;
+                size_t estimation = element.second;
+                EstimationHolder holder = EstimationHolder(element_cid, estimation);
+                estimations.push(holder);
+                currentCacheSize += contentSizes[element_cid];
+                cidEstimationHolderMap[element_cid] = holder;
+
+                std::pair<std::string, std::string> pair = 
+                            std::make_pair(element_cid, element_cid);
+
+                lookup.insert(pair);
+            }
+
+        }
 
         return nullptr;
     }
@@ -329,7 +390,7 @@ private:
     ContentSizes contentSizes;
     ContextSpace contextSpace;
     
-    // keep cid -> value
+    // keep cid -> and value
     Cache lookup;
 
     std::unordered_map<std::string, Features> content_features;
