@@ -66,6 +66,20 @@ public:
         return static_cast<size_t>(result);
     }
 
+    bool contain(ContextVector & x) {
+        for (auto & bound : bounds) {
+            std::string direction = bound.first;
+            size_t left = bound.second.first;
+            size_t right = bound.second.second;
+
+            if ((x[direction] >= left && x[direction] < right) == false) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     void add_capacity(const size_t & delta) {
         capacity += delta;
     }
@@ -82,6 +96,14 @@ public:
         return sum_of_request_rate;
     }
 
+    size_t get_level() {
+        return level;
+    }
+
+    Bounds get_bounds() {
+        return bounds;
+    }
+
 private:
     size_t level; 
     
@@ -95,6 +117,7 @@ private:
 
 
 class ContextSpace {
+    typedef std::unordered_map<std::string, size_t> CidLongLong;
 public:
     ContextSpace() {}
 
@@ -103,6 +126,7 @@ public:
         z1(c1), z2(c2)
     {
         Bounds bounds;
+        directions = time_features;
         for (auto & feature : time_features) {
             std::pair<double, double> edge;
             edge.first = 0.0;
@@ -115,19 +139,92 @@ public:
     }
 
     HyperCube find_hypercube(ContextVector & x) {
-        // TODO 
+        for (auto & hypercube : hypercubes) {
+            if (hypercube.contain(x))
+                return hypercube;
+        }
+
+        std::cout << "Error in find hypercube" << std::endl;
         Bounds bounds;
-        HyperCube hypercube(0, 1, 0, bounds);
+        HyperCube hypercube(0, 1, 0, bounds)
         return hypercube;
     }
 
+    void init_splitter(std::string & splitter) {
+        for (auto & direction : directions) {
+            splitter.push_back('0');
+        }
+    }
+
+    bool splitter_exhausted(std::string & splitter) {
+        bool overflow = true;
+        for (size_t i = 0; i < splitter.length(); ++i) {
+            if (overflow == false)
+                break
+
+            if (splitter[i] == '0') {
+                splitter[i] = '1';
+                overflow = false;
+            } else {
+                // splitter[i] == 1
+                splitter[i] = '0';
+            }
+        }
+
+        if (overflow)
+            return true;
+
+        return false;
+    }
+
+    HyperCube create_new_hypercube(HyperCube & hypercube,
+                        std::string & splitter)
+    {
+        Bounds new_bounds;
+        Bounds bounds = hypercube.get_bounds();
+        size_t level = hypercube.get_level();
+        size_t capacity = hypercube.get_capacity();
+        size_t sum = hypercube.get_sum_of_request();
+
+        for (size_t i = 0; i < splitter.length(); ++i) {
+            std::string direction = directions[i];
+            size_t left;
+            size_t right;
+            std::pair<double, double> pair;
+            
+            if (splitter[i] == '1') {
+                left = (bounds[direction].first + bounds[direction].second) / 2;
+                right = bounds[direction].second;
+            } else {
+                left = bounds[direction].first;
+                right = (bounds[direction].first + bounds[direction].second) / 2;
+            }
+
+            pair = std::make_pair(left, right);
+            new_bounds[directions] = pair;
+        }
+
+        return HyperCube(level, capacity, sum, new_bounds);
+    }
+
     void split(HyperCube & hypercube) {
-        // TODO
+        Bounds bounds = hypercube.get_bounds();
+        std::string splitter;
+
+        init_splitter(splitter);
+        hypercubes.push_back(create_new_hypercube(hypercube, splitter));
+
+        while (!splitter_exhausted(splitter)) {
+            hypercubes.push_back(create_new_hypercube(hypercube, splitter));
+        }
+
+        hypercubes.erase(hypercube);
     }
 
 private:
     size_t z1;
     size_t z2;
+    std::vector<std::string> directions;
     std::vector<HyperCube> hypercubes;
 };
 
@@ -150,7 +247,21 @@ public:
     }
 
     void update_features(const size_t & current_time) {
-        // TODO
+        total_requests += 1;
+        for (auto & element : access_stat) {
+            std::string feature = element.first;
+            size_t count = element.second;
+            size_t start = starts[feature];
+            size_t period = periods[feature];
+            if ((start + period) >= current_time) {
+                // starts[feature] = period * (current_time / period);
+                starts[feature] = current_time;
+                access_stat[feature] = 0;
+            } else {
+                access_stat[feature] += 1;
+            }
+        }
+
     }
 
     bool popularity_revealed(const size_t & current_time, 
@@ -164,8 +275,20 @@ public:
     }
 
     ContextVector get_context_vector() {
-        // TODO
         ContextVector contextVector;
+
+        double norm = 0;
+
+        for (auto & element : access_stat) {
+            norm += element.second * element.second;
+        }
+
+        norm = pow(norm, 0.5);
+
+        for (auto & element : access_stat) {
+            contextVector[element.first] = element.second / norm;
+        }
+
         return contextVector;
     }
 
