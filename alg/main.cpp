@@ -71,7 +71,7 @@ int test(size_t cacheSize, const std::string& fileName) {
 
         
         size = 1; //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        
+
         cache.addCidSize(id, size);
         
         // std::cout << "Current cache size put -> " << cache.getCacheSize() << std::endl;
@@ -85,7 +85,7 @@ int test(size_t cacheSize, const std::string& fileName) {
         ++count;
 
         if (count % 1000 == 0) {
-          std::cout << "Process " << count << "\n";
+          std::cerr << "Process " << count << "\n";
         }
 
     }

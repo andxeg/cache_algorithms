@@ -17,9 +17,9 @@
 
 // algorithm parameters
 // #define LEARN_LIMIT 1000 // !!!!
-#define LEARN_LIMIT 100
+#define LEARN_LIMIT 1000
 // #define PERIOD 10000 // !!!!!!!!!!!!!
-#define PERIOD 100
+#define PERIOD 10000
 #define Z1 2
 #define Z2 0.5
 
@@ -27,7 +27,8 @@
 #define HOUR 3600
 #define DAY 86400
 
-#define EPS 0.000001
+#define EPS 0.00001
+#define OVERFLOW_EPS 0.01
 
 
 
@@ -72,7 +73,7 @@ public:
         // result = true;
 
         for (auto & bound : bounds) {
-            if (fabs(bound.second.second - bound.second.first) < EPS) {
+            if (fabs(bound.second.second - bound.second.first) < OVERFLOW_EPS) {
                 result = false;
                 break;
             }
@@ -89,11 +90,11 @@ public:
             return 1;
 
         float result = static_cast<float>(sum_of_request_rate);
-        std::cout << "result ->" << result << std::endl;
+        // std::cout << "result ->" << result << std::endl;
 
         result = std::ceil(result / capacity);
 
-        std::cout << "capacity ->" << capacity << std::endl;
+        // std::cout << "capacity ->" << capacity << std::endl;
         return result;
     }
 
@@ -103,7 +104,7 @@ public:
             double left = bound.second.first;
             double right = bound.second.second;
 
-            if ((x[direction] >= left && x[direction] < right) == false) {
+            if ((x[direction] >= left && x[direction] <= right) == false) {
                 return false;
             }
         }
@@ -227,19 +228,22 @@ public:
     }
 
     HyperCube * find_hypercube(ContextVector & x) {
-        std::cout << "find_hypercube1" << std::endl;
+        // std::cout << "find_hypercube1" << std::endl;
         // print_context_space();
 
-        print_context_vector(x);
+        // print_context_vector(x);
         for (auto & hypercube : hypercubes) {
             if (hypercube.contain(x))
                 return &hypercube;
         }
 
-        std::cout << "find_hypercube2" << std::endl;
+        // std::cout << "find_hypercube2" << std::endl;
+        
         print_context_space();
+        std::cout << "hypercubes.size() -> " << hypercubes.size() << std::endl;
+        print_context_vector(x);
 
-        std::cout << "Error in find hypercube" << std::endl;
+        // std::cout << "Error in find hypercube" << std::endl;
         // Bounds bounds;
         // for (auto & direction : directions) {
         //     std::pair<double, double> edge;
@@ -285,11 +289,11 @@ public:
     void create_new_hypercube(const size_t & level, const size_t & capacity, 
                 const size_t & sum, Bounds & bounds, std::string & splitter)
     {
-        std::cout << "create_new_hypercube" << std::endl;
+        // std::cout << "create_new_hypercube" << std::endl;
 
         Bounds new_bounds;
 
-        std::cout << level << ' ' << capacity << ' ' << sum << std::endl;
+        // std::cout << level << ' ' << capacity << ' ' << sum << std::endl;
 
         for (size_t i = 0; i < splitter.length(); ++i) {
             std::string direction = directions[i];
@@ -315,7 +319,7 @@ public:
         }
 
         HyperCube new_hypercube = HyperCube(level + 1, capacity, sum, new_bounds);
-        std::cout << new_hypercube << std::endl;
+        // std::cout << new_hypercube << std::endl;
         hypercubes.push_back(new_hypercube);
     }
 
@@ -323,8 +327,11 @@ public:
         if (hypercube->overflow(z1, z2) == false)
             return;
 
-        std::cout << "splitting" << std::endl;
-        std::cout << *hypercube << std::endl;
+        if (hypercubes.size() >= 10000)
+            return;
+
+        // std::cout << "splitting" << std::endl;
+        // std::cout << *hypercube << std::endl;
 
         std::string splitter;
         init_splitter(splitter);
@@ -360,6 +367,10 @@ public:
         std::cout << std::endl;
     }
 
+    size_t size() {
+        return hypercubes.size();
+    }
+
 private:
     size_t z1;
     size_t z2;
@@ -386,7 +397,7 @@ public:
     }
 
     void update_features(const size_t & current_time) {
-        std::cout << "update_features1" << std::endl;
+        // std::cout << "update_features1" << std::endl;
         total_requests += 1;
         for (auto & element : access_stat) {
             std::string feature = element.first;
@@ -397,10 +408,10 @@ public:
                 // starts[feature] = period * (current_time / period);
                 starts[feature] = current_time;
                 access_stat[feature] = 0;
-                std::cout << "update_features2" << std::endl;
+                // std::cout << "update_features2" << std::endl;
             } else {
                 access_stat[feature] += 1;
-                std::cout << "update_features3" << std::endl;
+                // std::cout << "update_features3" << std::endl;
             }
         }
 
@@ -468,7 +479,7 @@ class PoPCaching {
 public:
     
     ~PoPCaching() {
-        contextSpace.print_context_space();
+        // contextSpace.print_context_space();
     }
 
     explicit PoPCaching(size_t size) : 
@@ -498,16 +509,17 @@ public:
         this->periods = periods;
 
         ContextSpace contextSpace(time_features, z1, z2);
-        std::cout << "initial context space" << std::endl;
+        // std::cout << "initial context space" << std::endl;
         this->contextSpace = contextSpace;
         this->contextSpace.print_context_space();
     }
 
     std::string * find(const std::string & cid, const size_t & current_time) {
         ++cyclesCount;
+        // std::cout << contextSpace.size() << std::endl;
 
-        std::cout << "cache::find1" << std::endl;
-        std::cout << "lookup.size() -> " << lookup.size() << std::endl;
+        // std::cout << "cache::find1" << std::endl;
+        // std::cout << "lookup.size() -> " << lookup.size() << std::endl;
 
         if (lookup.size() != currentCacheSize) {
             std::cout << "lookup.size != currentCacheSize" << std::endl;
@@ -531,7 +543,7 @@ public:
             content_features[cid] = features;
         }
 
-        std::cout << "cache::find2" << std::endl;
+        // std::cout << "cache::find2" << std::endl;
 
         content_features[cid].update_features(current_time);
 
@@ -542,26 +554,26 @@ public:
         if (it == lookup.end())
             return nullptr;
 
-        std::cout << "cache::find3" << std::endl;
+        // std::cout << "cache::find3" << std::endl;
 
         return &it->second;
     }
 
     std::string * put(const std::string & cid, const std::string & value) {
-        std::cout << "cache::put1" << std::endl;
-        std::cout << "lookup.size() -> " << lookup.size() << std::endl;
-        std::cout << "estimations.size() -> " << estimations.size() << std::endl;
+        // std::cout << "cache::put1" << std::endl;
+        // std::cout << "lookup.size() -> " << lookup.size() << std::endl;
+        // std::cout << "estimations.size() -> " << estimations.size() << std::endl;
         size_t cid_size = contentSizes[cid];
         size_t popularity_estimation = estimate_popularity(cid);
 
         if (cid_size < cacheSize) {    
-            std::cout << "cache::put2" << std::endl;
+            // std::cout << "cache::put2" << std::endl;
             size_t sum_popularity = 0;
             std::unordered_map<std::string, size_t> evicted_elements;
 
             // evict old elements
             while ((getCacheSize() + cid_size) > cacheSize) {
-                std::cout << "cache::put3" << std::endl;
+                // std::cout << "cache::put3" << std::endl;
                 EstimationHolder least_popular = estimations.top();
                 std::string least_cid = least_popular.cid;
                 size_t least_estimation = least_popular.estimation;
@@ -593,8 +605,8 @@ public:
                 cidEstimationHolderMap[cid] = new_holder;
                 std::pair<std::string, std::string> pair = std::make_pair(cid, cid);
                 lookup.insert(pair);
-                std::cout << "cache::put4" << std::endl;
-                std::cout << "lookup.size() -> " << lookup.size() << std::endl;
+                // std::cout << "cache::put4" << std::endl;
+                // std::cout << "lookup.size() -> " << lookup.size() << std::endl;
                 return &(lookup.find(cid)->second);
             } 
 
@@ -613,7 +625,7 @@ public:
 
                 lookup.insert(pair);
             }
-            std::cout << "cache::put5" << std::endl;
+            // std::cout << "cache::put5" << std::endl;
         }
 
         return nullptr;
@@ -649,7 +661,7 @@ public:
         // Re-estimate the request rate for all content in 'estimations'
         // Rebuild the priority queue 'estimations'
 
-        std::cout << "update_evaluations" << std::endl;
+        // std::cout << "update_evaluations" << std::endl;
 
         for (auto & element : lookup) {
             auto & cid = element.first;
@@ -673,7 +685,7 @@ public:
         if (features.popularity_revealed(current_time, learn_limit) == false) 
             return;
 
-        std::cout << "learn_popularity" << std::endl;
+        // std::cout << "learn_popularity" << std::endl;
 
         // NOTE: learn must call only one time or many time if time >= learn_limit
 
@@ -700,13 +712,14 @@ public:
 
 
         if (hypercube == nullptr) {
+            print_context_vector(context_vector);
             std::cout << "In learn popularity. hypercube == nullptr" << std::endl;
             exit(127);
         }
 
         size_t estimation = hypercube->get_estimation();
 
-        std::cout << "estimation -> " << estimation << std::endl;
+        // std::cout << "estimation -> " << estimation << std::endl;
         return estimation;
     }
 
