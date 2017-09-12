@@ -70,7 +70,7 @@ int test(size_t cacheSize, const std::string& fileName) {
         }
 
         
-        size = 1; //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        // size = 1; //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         cache.addCidSize(id, size);
         

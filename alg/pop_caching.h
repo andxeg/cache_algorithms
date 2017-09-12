@@ -521,17 +521,18 @@ public:
         // std::cout << "cache::find1" << std::endl;
         // std::cout << "lookup.size() -> " << lookup.size() << std::endl;
 
-        if (lookup.size() != currentCacheSize) {
-            std::cout << "lookup.size != currentCacheSize" << std::endl;
-            std::cout << lookup.size() << ' ' << currentCacheSize  << std::endl;
-            exit(127);
-        }
+        
+        // if (lookup.size() != currentCacheSize) {
+        //     std::cout << "lookup.size != currentCacheSize" << std::endl;
+        //     std::cout << lookup.size() << ' ' << currentCacheSize  << std::endl;
+        //     exit(127);
+        // }
 
-        if (lookup.size() != estimations.size()) {
-            std::cout << "lookup.size != estimations.size()" << std::endl;
-            std::cout << lookup.size() << ' ' << estimations.size()  << std::endl;
-            exit(127);
-        }
+        // if (lookup.size() != estimations.size()) {
+        //     std::cout << "lookup.size != estimations.size()" << std::endl;
+        //     std::cout << lookup.size() << ' ' << estimations.size()  << std::endl;
+        //     exit(127);
+        // }
 
         // for (auto & period : periods) {
         //     std::cout << period.first << ' ' << period.second << ' ';
