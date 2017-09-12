@@ -27,7 +27,7 @@
 #define HOUR 3600
 #define DAY 86400
 
-#define EPS 0.0000001
+#define EPS 0.000001
 
 
 
@@ -64,7 +64,21 @@ public:
     }
     
     bool overflow(const double & z1, const double & z2) {
-        return capacity >= z1 * pow(2, z2 * level);
+        bool result = (capacity >= z1 * pow(2, z2 * level));
+
+        if (result == false)
+            return false;
+
+        // result = true;
+
+        for (auto & bound : bounds) {
+            if (fabs(bound.second.second - bound.second.first) < EPS) {
+                result = false;
+                break;
+            }
+        }
+
+        return result;
     }
 
     size_t get_estimation() {
@@ -116,7 +130,7 @@ public:
             double right = bound.second.second;
             double left_other = other_bounds[direction].first;
             double right_other = other_bounds[direction].second;
-            if (abs(left - left_other) > EPS || abs(right - right_other) > EPS) {
+            if (fabs(left - left_other) > EPS || fabs(right - right_other) > EPS) {
                 flag = false;
                 break;
             }
@@ -135,6 +149,7 @@ public:
             return out;
         }
 
+        std::cout << "hypecube" << std::endl;
         for (auto & bound : bounds) {
             out << bound.first << ' ' << '<' <<
                 bound.second.first << ' ' << bound.second.second << "> ";
@@ -213,7 +228,7 @@ public:
 
     HyperCube * find_hypercube(ContextVector & x) {
         std::cout << "find_hypercube1" << std::endl;
-        print_context_space();
+        // print_context_space();
 
         print_context_vector(x);
         for (auto & hypercube : hypercubes) {
@@ -267,41 +282,41 @@ public:
         return false;
     }
 
-    void create_new_hypercube(HyperCube * hypercube,
-                        std::string & splitter)
+    void create_new_hypercube(const size_t & level, const size_t & capacity, 
+                const size_t & sum, Bounds & bounds, std::string & splitter)
     {
         std::cout << "create_new_hypercube" << std::endl;
-        if (hypercube == nullptr)
-            std::cout << "nullptr" << std::endl;
 
-        std::cout << *hypercube << std::endl;
         Bounds new_bounds;
-        Bounds bounds = hypercube->get_bounds();
-        size_t level = hypercube->get_level();
-        size_t capacity = hypercube->get_capacity();
-        size_t sum = hypercube->get_sum_of_request();
 
         std::cout << level << ' ' << capacity << ' ' << sum << std::endl;
 
         for (size_t i = 0; i < splitter.length(); ++i) {
             std::string direction = directions[i];
-            double left;
-            double right;
+            double left = 0.0;
+            double right = 0.0;
             std::pair<double, double> pair;
             
+            double delta = bounds[direction].second - bounds[direction].first;
+            // may be check if delta < 0
+            // it may be if delta is very small
+
             if (splitter[i] == '1') {
-                left = (bounds[direction].first + bounds[direction].second) / 2;
+
+                left =  bounds[direction].first + delta / 2;
                 right = bounds[direction].second;
             } else {
                 left = bounds[direction].first;
-                right = (bounds[direction].first + bounds[direction].second) / 2;
+                right = bounds[direction].first + delta/ 2;
             }
 
             pair = std::make_pair(left, right);
             new_bounds[direction] = pair;
         }
 
-        hypercubes.push_back(HyperCube(++level, capacity, sum, new_bounds));
+        HyperCube new_hypercube = HyperCube(level + 1, capacity, sum, new_bounds);
+        std::cout << new_hypercube << std::endl;
+        hypercubes.push_back(new_hypercube);
     }
 
     void split(HyperCube * hypercube) {
@@ -309,17 +324,27 @@ public:
             return;
 
         std::cout << "splitting" << std::endl;
+        std::cout << *hypercube << std::endl;
 
         std::string splitter;
         init_splitter(splitter);
-        create_new_hypercube(hypercube, splitter);
 
-        while (!splitter_exhausted(splitter)) {
-            create_new_hypercube(hypercube, splitter);
-        }
+        Bounds bounds = hypercube->get_bounds();
+        size_t level = hypercube->get_level();
+        size_t capacity = hypercube->get_capacity();
+        size_t sum = hypercube->get_sum_of_request();
 
         auto it = find(hypercubes.begin(), hypercubes.end(), *hypercube);
         hypercubes.erase(it);
+
+
+        create_new_hypercube(level, capacity, sum, bounds, splitter);
+
+        while (!splitter_exhausted(splitter)) {
+            create_new_hypercube(level, capacity, sum, bounds, splitter);
+        }
+
+        // print_context_space();
     }
 
     void print_context_space() {
@@ -441,6 +466,11 @@ class PoPCaching {
     typedef std::unordered_map<std::string, size_t> CidLongLong;
     typedef std::unordered_map<std::string, std::string> Cache;
 public:
+    
+    ~PoPCaching() {
+        contextSpace.print_context_space();
+    }
+
     explicit PoPCaching(size_t size) : 
                 cacheSize(size < 1 ? 1 : size),
                 currentCacheSize(0),
@@ -660,7 +690,7 @@ public:
         size_t total_requests = features.get_total_requests();
         hypercube->add_capacity(1);
         hypercube->add_sum_of_requests(total_requests);
-        // contextSpace.split(hypercube);
+        contextSpace.split(hypercube);
     }
 
     size_t estimate_popularity(const std::string & cid) {
