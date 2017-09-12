@@ -69,6 +69,9 @@ int test(size_t cacheSize, const std::string& fileName) {
             break;
         }
 
+        
+        size = 1; //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
         cache.addCidSize(id, size);
         
         // std::cout << "Current cache size put -> " << cache.getCacheSize() << std::endl;

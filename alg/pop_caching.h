@@ -6,8 +6,9 @@
 #include <queue>
 #include <vector>
 #include <cstdlib>
-#include <iostream>
+#include <cassert>
 #include <utility>
+#include <iostream>
 #include <algorithm>
 #include <functional>
 #include <unordered_map>
@@ -15,8 +16,10 @@
 
 
 // algorithm parameters
-#define LEARN_LIMIT 1000
-#define PERIOD 10000
+// #define LEARN_LIMIT 1000 // !!!!
+#define LEARN_LIMIT 100
+// #define PERIOD 10000 // !!!!!!!!!!!!!
+#define PERIOD 100
 #define Z1 2
 #define Z2 0.5
 
@@ -72,11 +75,11 @@ public:
             return 1;
 
         float result = static_cast<float>(sum_of_request_rate);
-        std:: cout << "result ->" << result << std::endl;
+        std::cout << "result ->" << result << std::endl;
 
         result = std::ceil(result / capacity);
 
-        std:: cout << "capacity ->" << capacity << std::endl;
+        std::cout << "capacity ->" << capacity << std::endl;
         return result;
     }
 
@@ -127,6 +130,11 @@ public:
 
     friend std::ostream & operator << (std::ostream & out, const HyperCube & h) {
         Bounds bounds = h.get_bounds();
+        if (bounds.size() == 0) {
+            std::cout << "Hypercube is empty" << std::endl;
+            return out;
+        }
+
         for (auto & bound : bounds) {
             out << bound.first << ' ' << '<' <<
                 bound.second.first << ' ' << bound.second.second << "> ";
@@ -203,29 +211,32 @@ public:
         hypercubes.push_back(hypercube);
     }
 
-    HyperCube find_hypercube(ContextVector & x) {
+    HyperCube * find_hypercube(ContextVector & x) {
         std::cout << "find_hypercube1" << std::endl;
+        print_context_space();
 
         print_context_vector(x);
         for (auto & hypercube : hypercubes) {
             if (hypercube.contain(x))
-                return hypercube;
+                return &hypercube;
         }
 
         std::cout << "find_hypercube2" << std::endl;
         print_context_space();
 
         std::cout << "Error in find hypercube" << std::endl;
-        Bounds bounds;
-        for (auto & direction : directions) {
-            std::pair<double, double> edge;
-            edge.first = -2.0;
-            edge.second = -1.0;
-            bounds[direction] = edge;
-        }
+        // Bounds bounds;
+        // for (auto & direction : directions) {
+        //     std::pair<double, double> edge;
+        //     edge.first = -2.0;
+        //     edge.second = -1.0;
+        //     bounds[direction] = edge;
+        // }
 
-        HyperCube hypercube(0, 1, 0, bounds);
-        return hypercube;
+        // HyperCube hypercube(0, 1, 0, bounds);
+        // hypercubes.push_back(hypercube);
+        // return &hypercubes.back();
+        return nullptr;
     }
 
     void init_splitter(std::string & splitter) {
@@ -256,15 +267,21 @@ public:
         return false;
     }
 
-    HyperCube create_new_hypercube(HyperCube & hypercube,
+    void create_new_hypercube(HyperCube * hypercube,
                         std::string & splitter)
     {
         std::cout << "create_new_hypercube" << std::endl;
+        if (hypercube == nullptr)
+            std::cout << "nullptr" << std::endl;
+
+        std::cout << *hypercube << std::endl;
         Bounds new_bounds;
-        Bounds bounds = hypercube.get_bounds();
-        size_t level = hypercube.get_level();
-        size_t capacity = hypercube.get_capacity();
-        size_t sum = hypercube.get_sum_of_request();
+        Bounds bounds = hypercube->get_bounds();
+        size_t level = hypercube->get_level();
+        size_t capacity = hypercube->get_capacity();
+        size_t sum = hypercube->get_sum_of_request();
+
+        std::cout << level << ' ' << capacity << ' ' << sum << std::endl;
 
         for (size_t i = 0; i < splitter.length(); ++i) {
             std::string direction = directions[i];
@@ -284,24 +301,24 @@ public:
             new_bounds[direction] = pair;
         }
 
-        return HyperCube(++level, capacity, sum, new_bounds);
+        hypercubes.push_back(HyperCube(++level, capacity, sum, new_bounds));
     }
 
-    void split(HyperCube & hypercube) {
-        if (hypercube.overflow(z1, z2) == false)
+    void split(HyperCube * hypercube) {
+        if (hypercube->overflow(z1, z2) == false)
             return;
 
         std::cout << "splitting" << std::endl;
 
         std::string splitter;
         init_splitter(splitter);
-        hypercubes.push_back(create_new_hypercube(hypercube, splitter));
+        create_new_hypercube(hypercube, splitter);
 
         while (!splitter_exhausted(splitter)) {
-            hypercubes.push_back(create_new_hypercube(hypercube, splitter));
+            create_new_hypercube(hypercube, splitter);
         }
 
-        auto it = find(hypercubes.begin(), hypercubes.end(), hypercube);
+        auto it = find(hypercubes.begin(), hypercubes.end(), *hypercube);
         hypercubes.erase(it);
     }
 
@@ -452,19 +469,32 @@ public:
 
         ContextSpace contextSpace(time_features, z1, z2);
         std::cout << "initial context space" << std::endl;
-        contextSpace.print_context_space();
         this->contextSpace = contextSpace;
+        this->contextSpace.print_context_space();
     }
 
     std::string * find(const std::string & cid, const size_t & current_time) {
         ++cyclesCount;
 
         std::cout << "cache::find1" << std::endl;
+        std::cout << "lookup.size() -> " << lookup.size() << std::endl;
 
-        for (auto & period : periods) {
-            std::cout << period.first << ' ' << period.second << ' ';
+        if (lookup.size() != currentCacheSize) {
+            std::cout << "lookup.size != currentCacheSize" << std::endl;
+            std::cout << lookup.size() << ' ' << currentCacheSize  << std::endl;
+            exit(127);
         }
-        std::cout << std::endl;
+
+        if (lookup.size() != estimations.size()) {
+            std::cout << "lookup.size != estimations.size()" << std::endl;
+            std::cout << lookup.size() << ' ' << estimations.size()  << std::endl;
+            exit(127);
+        }
+
+        // for (auto & period : periods) {
+        //     std::cout << period.first << ' ' << period.second << ' ';
+        // }
+        // std::cout << std::endl;
 
         if (content_features.find(cid) == content_features.end()) {
             Features features = Features(time_features, current_time, periods);
@@ -488,16 +518,20 @@ public:
     }
 
     std::string * put(const std::string & cid, const std::string & value) {
-        std::cout << "cache::put" << std::endl;
+        std::cout << "cache::put1" << std::endl;
+        std::cout << "lookup.size() -> " << lookup.size() << std::endl;
+        std::cout << "estimations.size() -> " << estimations.size() << std::endl;
         size_t cid_size = contentSizes[cid];
         size_t popularity_estimation = estimate_popularity(cid);
 
         if (cid_size < cacheSize) {    
+            std::cout << "cache::put2" << std::endl;
             size_t sum_popularity = 0;
             std::unordered_map<std::string, size_t> evicted_elements;
 
             // evict old elements
             while ((getCacheSize() + cid_size) > cacheSize) {
+                std::cout << "cache::put3" << std::endl;
                 EstimationHolder least_popular = estimations.top();
                 std::string least_cid = least_popular.cid;
                 size_t least_estimation = least_popular.estimation;
@@ -505,24 +539,32 @@ public:
                 sum_popularity += least_estimation;
 
                 if (estimations.remove(least_popular) == false) {
-                   std::cout << "Error in removing holder from queue" << std::endl;
+                   std::cout << "Error in removing holder from queue 1" << std::endl;
+                   exit(127);
                 }
                 
                 currentCacheSize -= contentSizes[least_cid];
-                cidEstimationHolderMap.erase(least_cid);
+                cidEstimationHolderMap.erase(least_cid); 
+                size_t s1 = lookup.size();
                 lookup.erase(least_cid);
+                size_t s2 = lookup.size();
+                if (++s2 != s1)
+                    std::cout << "ERROR. lookup.erase " << std::endl;
             }
 
             // compare sum popularity with popularity of the new content
             size_t compare_coeff = 2;
-            if (popularity_estimation > compare_coeff * sum_popularity) {   
+            if (popularity_estimation >= compare_coeff * sum_popularity) {   
                 EstimationHolder new_holder = EstimationHolder(cid, 
                                                 popularity_estimation);
 
                 estimations.push(new_holder);
                 currentCacheSize += contentSizes[cid];
+                cidEstimationHolderMap[cid] = new_holder;
                 std::pair<std::string, std::string> pair = std::make_pair(cid, cid);
                 lookup.insert(pair);
+                std::cout << "cache::put4" << std::endl;
+                std::cout << "lookup.size() -> " << lookup.size() << std::endl;
                 return &(lookup.find(cid)->second);
             } 
 
@@ -541,7 +583,7 @@ public:
 
                 lookup.insert(pair);
             }
-
+            std::cout << "cache::put5" << std::endl;
         }
 
         return nullptr;
@@ -583,7 +625,8 @@ public:
             auto & cid = element.first;
             EstimationHolder old_holder = cidEstimationHolderMap[cid];
             if (estimations.remove(old_holder) == false) {
-                std::cout << "Error in removing holder from queue" << std::endl;
+                std::cout << "Error in removing holder from queue 2" << std::endl;
+                exit(127);
             }
 
             size_t new_estimation = estimate_popularity(cid);
@@ -605,19 +648,33 @@ public:
         // NOTE: learn must call only one time or many time if time >= learn_limit
 
         ContextVector context_vector = features.get_context_vector();
-        HyperCube hypercube = contextSpace.find_hypercube(context_vector);
+        HyperCube * hypercube = contextSpace.find_hypercube(context_vector);
+
+        
+        if (hypercube == nullptr) {
+            std::cout << "In learn popularity. hypercube == nullptr" << std::endl;
+            exit(127);
+        }
+        
 
         size_t total_requests = features.get_total_requests();
-        hypercube.add_capacity(1);
-        hypercube.add_sum_of_requests(total_requests);
-        contextSpace.split(hypercube);
+        hypercube->add_capacity(1);
+        hypercube->add_sum_of_requests(total_requests);
+        // contextSpace.split(hypercube);
     }
 
     size_t estimate_popularity(const std::string & cid) {
         Features features = content_features[cid];
         ContextVector context_vector = features.get_context_vector();
-        HyperCube hypercube = contextSpace.find_hypercube(context_vector);
-        size_t estimation = hypercube.get_estimation();
+        HyperCube * hypercube = contextSpace.find_hypercube(context_vector);
+
+
+        if (hypercube == nullptr) {
+            std::cout << "In learn popularity. hypercube == nullptr" << std::endl;
+            exit(127);
+        }
+
+        size_t estimation = hypercube->get_estimation();
 
         std::cout << "estimation -> " << estimation << std::endl;
         return estimation;
@@ -649,7 +706,7 @@ private:
         std::string cid;
         size_t estimation;
         EstimationHolder(){}
-        EstimationHolder(const std::string & cid, size_t estimation) : 
+        EstimationHolder(const std::string & cid, const size_t & estimation) : 
             cid(cid),
             estimation(estimation) {}
 

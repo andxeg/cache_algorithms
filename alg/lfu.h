@@ -88,7 +88,7 @@ public:
     }
 
     size_t elementsCount() const {
-        return 0;
+        return lookup.size();
     }
 
     void setEvictionCallback(std::function<void(const Key &,const Value &)> callback) {
