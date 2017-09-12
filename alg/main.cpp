@@ -55,12 +55,12 @@ int test(size_t cacheSize, const std::string& fileName) {
 
     std::ifstream in(fileName);
     while (true) {
-        //size_t access_time;
+        size_t access_time;
         std::string id;
         size_t size;
         
 
-        // in >> access_time;
+        in >> access_time;
         in >> id;
         in >> size;
 
@@ -72,7 +72,7 @@ int test(size_t cacheSize, const std::string& fileName) {
         cache.addCidSize(id, size);
         
         // std::cout << "Current cache size put -> " << cache.getCacheSize() << std::endl;
-        const std::string *value = cache.find(id, 100);
+        const std::string *value = cache.find(id, access_time);
 
         if (!value) {
             ++missed;

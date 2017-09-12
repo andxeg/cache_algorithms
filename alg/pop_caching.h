@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <utility>
+#include <algorithm>
 #include <functional>
 #include <unordered_map>
 #include <unordered_set>
@@ -22,6 +23,9 @@
 // other parameters
 #define HOUR 3600
 #define DAY 86400
+
+#define EPS 0.0000001
+
 
 
 template<typename T>
@@ -61,16 +65,26 @@ public:
     }
 
     size_t get_estimation() {
+        if (capacity == 0 && sum_of_request_rate == 0)
+            return 1;
+
+        if (capacity == 0 && sum_of_request_rate != 0)
+            return 1;
+
         float result = static_cast<float>(sum_of_request_rate);
+        std:: cout << "result ->" << result << std::endl;
+
         result = std::ceil(result / capacity);
-        return static_cast<size_t>(result);
+
+        std:: cout << "capacity ->" << capacity << std::endl;
+        return result;
     }
 
     bool contain(ContextVector & x) {
         for (auto & bound : bounds) {
             std::string direction = bound.first;
-            size_t left = bound.second.first;
-            size_t right = bound.second.second;
+            double left = bound.second.first;
+            double right = bound.second.second;
 
             if ((x[direction] >= left && x[direction] < right) == false) {
                 return false;
@@ -78,6 +92,47 @@ public:
         }
 
         return true;
+    }
+
+    bool operator == (const HyperCube & other) const {
+        bool result;
+        result =    (level == other.level) && 
+                    (capacity == other.capacity) &&
+                    (sum_of_request_rate == other.sum_of_request_rate);
+
+        if (result == false)
+            return result;
+        
+        bool flag = true;
+
+        Bounds other_bounds = other.get_bounds();
+
+        for (auto & bound : bounds) {
+            std::string direction = bound.first;
+            double left = bound.second.first;
+            double right = bound.second.second;
+            double left_other = other_bounds[direction].first;
+            double right_other = other_bounds[direction].second;
+            if (abs(left - left_other) > EPS || abs(right - right_other) > EPS) {
+                flag = false;
+                break;
+            }
+        }
+
+        if (flag == false)
+            return false;
+
+        return true;
+    }
+
+    friend std::ostream & operator << (std::ostream & out, const HyperCube & h) {
+        Bounds bounds = h.get_bounds();
+        for (auto & bound : bounds) {
+            out << bound.first << ' ' << '<' <<
+                bound.second.first << ' ' << bound.second.second << "> ";
+        }
+
+        return out;
     }
 
     void add_capacity(const size_t & delta) {
@@ -100,7 +155,7 @@ public:
         return level;
     }
 
-    Bounds get_bounds() {
+    Bounds get_bounds() const {
         return bounds;
     }
 
@@ -114,6 +169,16 @@ private:
 
     Bounds bounds;
 };
+
+
+void print_context_vector(const ContextVector & x) {
+    std::cout << "context vector" << std::endl;
+    for (auto & elem : x) {
+        std::cout << elem.first << ' ' << elem.second << ' ';
+    }
+    std::cout << std::endl;
+    std::cout << std::endl;
+}
 
 
 class ContextSpace {
@@ -139,19 +204,33 @@ public:
     }
 
     HyperCube find_hypercube(ContextVector & x) {
+        std::cout << "find_hypercube1" << std::endl;
+
+        print_context_vector(x);
         for (auto & hypercube : hypercubes) {
             if (hypercube.contain(x))
                 return hypercube;
         }
 
+        std::cout << "find_hypercube2" << std::endl;
+        print_context_space();
+
         std::cout << "Error in find hypercube" << std::endl;
         Bounds bounds;
-        HyperCube hypercube(0, 1, 0, bounds)
+        for (auto & direction : directions) {
+            std::pair<double, double> edge;
+            edge.first = -2.0;
+            edge.second = -1.0;
+            bounds[direction] = edge;
+        }
+
+        HyperCube hypercube(0, 1, 0, bounds);
         return hypercube;
     }
 
     void init_splitter(std::string & splitter) {
-        for (auto & direction : directions) {
+        size_t dimension = directions.size();
+        for (size_t i = 0; i < dimension; ++i) {
             splitter.push_back('0');
         }
     }
@@ -160,7 +239,7 @@ public:
         bool overflow = true;
         for (size_t i = 0; i < splitter.length(); ++i) {
             if (overflow == false)
-                break
+                break;
 
             if (splitter[i] == '0') {
                 splitter[i] = '1';
@@ -180,6 +259,7 @@ public:
     HyperCube create_new_hypercube(HyperCube & hypercube,
                         std::string & splitter)
     {
+        std::cout << "create_new_hypercube" << std::endl;
         Bounds new_bounds;
         Bounds bounds = hypercube.get_bounds();
         size_t level = hypercube.get_level();
@@ -188,8 +268,8 @@ public:
 
         for (size_t i = 0; i < splitter.length(); ++i) {
             std::string direction = directions[i];
-            size_t left;
-            size_t right;
+            double left;
+            double right;
             std::pair<double, double> pair;
             
             if (splitter[i] == '1') {
@@ -201,16 +281,19 @@ public:
             }
 
             pair = std::make_pair(left, right);
-            new_bounds[directions] = pair;
+            new_bounds[direction] = pair;
         }
 
-        return HyperCube(level, capacity, sum, new_bounds);
+        return HyperCube(++level, capacity, sum, new_bounds);
     }
 
     void split(HyperCube & hypercube) {
-        Bounds bounds = hypercube.get_bounds();
-        std::string splitter;
+        if (hypercube.overflow(z1, z2) == false)
+            return;
 
+        std::cout << "splitting" << std::endl;
+
+        std::string splitter;
         init_splitter(splitter);
         hypercubes.push_back(create_new_hypercube(hypercube, splitter));
 
@@ -218,7 +301,21 @@ public:
             hypercubes.push_back(create_new_hypercube(hypercube, splitter));
         }
 
-        hypercubes.erase(hypercube);
+        auto it = find(hypercubes.begin(), hypercubes.end(), hypercube);
+        hypercubes.erase(it);
+    }
+
+    void print_context_space() {
+        if (hypercubes.empty()) {
+            std::cout << "Context Space is empty" << std::endl;
+            return;
+        }
+
+        std::cout << "context space" << std::endl;
+        for (auto & hypercube : hypercubes) {
+            std::cout << hypercube << std::endl;
+        }
+        std::cout << std::endl;
     }
 
 private:
@@ -247,18 +344,21 @@ public:
     }
 
     void update_features(const size_t & current_time) {
+        std::cout << "update_features1" << std::endl;
         total_requests += 1;
         for (auto & element : access_stat) {
             std::string feature = element.first;
-            size_t count = element.second;
+            // size_t count = element.second;
             size_t start = starts[feature];
             size_t period = periods[feature];
-            if ((start + period) >= current_time) {
+            if ((start + period) <= current_time) {
                 // starts[feature] = period * (current_time / period);
                 starts[feature] = current_time;
                 access_stat[feature] = 0;
+                std::cout << "update_features2" << std::endl;
             } else {
                 access_stat[feature] += 1;
+                std::cout << "update_features3" << std::endl;
             }
         }
 
@@ -270,20 +370,27 @@ public:
         return (current_time - first_access) >= time_limit;
     }
 
-    long long get_total_requests() {
+    size_t get_total_requests() {
         return total_requests;
     }
 
     ContextVector get_context_vector() {
         ContextVector contextVector;
 
+        size_t null = 0;
         double norm = 0;
 
+
         for (auto & element : access_stat) {
+            if (element.second == 0)
+                ++null;
             norm += element.second * element.second;
         }
 
         norm = pow(norm, 0.5);
+
+        if (norm <= EPS || null == access_stat.size())
+            norm = 1.0;
 
         for (auto & element : access_stat) {
             contextVector[element.first] = element.second / norm;
@@ -295,10 +402,10 @@ public:
 
 private:
     // time of the first request
-    long long first_access;
+    size_t first_access;
 
     // total count of the requests
-    long long total_requests; 
+    size_t total_requests; 
 
     //access statistics
     CidLongLong access_stat; 
@@ -344,16 +451,27 @@ public:
         this->periods = periods;
 
         ContextSpace contextSpace(time_features, z1, z2);
-
+        std::cout << "initial context space" << std::endl;
+        contextSpace.print_context_space();
+        this->contextSpace = contextSpace;
     }
 
     std::string * find(const std::string & cid, const size_t & current_time) {
         ++cyclesCount;
 
+        std::cout << "cache::find1" << std::endl;
+
+        for (auto & period : periods) {
+            std::cout << period.first << ' ' << period.second << ' ';
+        }
+        std::cout << std::endl;
+
         if (content_features.find(cid) == content_features.end()) {
             Features features = Features(time_features, current_time, periods);
             content_features[cid] = features;
         }
+
+        std::cout << "cache::find2" << std::endl;
 
         content_features[cid].update_features(current_time);
 
@@ -364,10 +482,13 @@ public:
         if (it == lookup.end())
             return nullptr;
 
+        std::cout << "cache::find3" << std::endl;
+
         return &it->second;
     }
 
     std::string * put(const std::string & cid, const std::string & value) {
+        std::cout << "cache::put" << std::endl;
         size_t cid_size = contentSizes[cid];
         size_t popularity_estimation = estimate_popularity(cid);
 
@@ -388,7 +509,7 @@ public:
                 }
                 
                 currentCacheSize -= contentSizes[least_cid];
-                cidEstimationHolderMap.erase(cid);
+                cidEstimationHolderMap.erase(least_cid);
                 lookup.erase(least_cid);
             }
 
@@ -406,7 +527,7 @@ public:
             } 
 
             // if popularity of the new content is not sufficient 
-            // then return previous state
+            // then return to previous state
             for (auto & element : evicted_elements) {
                 std::string element_cid = element.first;
                 size_t estimation = element.second;
@@ -450,11 +571,13 @@ public:
     }
 
     void update_evaluations() {
-        if (cyclesCount % period != 0)
+        if ((cyclesCount % period) != 0)
             return;
 
         // Re-estimate the request rate for all content in 'estimations'
         // Rebuild the priority queue 'estimations'
+
+        std::cout << "update_evaluations" << std::endl;
 
         for (auto & element : lookup) {
             auto & cid = element.first;
@@ -477,6 +600,8 @@ public:
         if (features.popularity_revealed(current_time, learn_limit) == false) 
             return;
 
+        std::cout << "learn_popularity" << std::endl;
+
         // NOTE: learn must call only one time or many time if time >= learn_limit
 
         ContextVector context_vector = features.get_context_vector();
@@ -493,6 +618,8 @@ public:
         ContextVector context_vector = features.get_context_vector();
         HyperCube hypercube = contextSpace.find_hypercube(context_vector);
         size_t estimation = hypercube.get_estimation();
+
+        std::cout << "estimation -> " << estimation << std::endl;
         return estimation;
     }
 
