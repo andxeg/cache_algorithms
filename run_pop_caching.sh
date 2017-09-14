@@ -16,7 +16,7 @@ for period in $RE_ESTIMATION_PERIODS
 do
 	for learn_limit in $(seq $MIN_LEARN_LIMIT $LEARN_LIMIT_STEP $MAX_LEARN_LIMIT)
 	do
-		# mkdir "/home/soc/ARCCN/results_pop_caching/l"$learn_limit"_re_"$period
+		# mkdir "/home/soc/ARCCN/results_pop_caching/l_"$learn_limit"_re_"$period
 		DIR="/home/soc/ARCCN/results_pop_caching/l_"$learn_limit"_re_"$period
 		i=0
 		for size in $SIZES
