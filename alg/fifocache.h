@@ -10,7 +10,7 @@ template <typename Key, typename Value>
 class FifoCache {
     typedef std::unordered_map<std::string, size_t> ContentSizes;
 public:
-    explicit FifoCache(size_t size) :
+    explicit FifoCache(size_t size, const size_t & learn_limit = 100, const size_t & period = 1000) :
             cacheSize(size < 1 ? 1 : size),
             currentCacheSize(0) {}
 

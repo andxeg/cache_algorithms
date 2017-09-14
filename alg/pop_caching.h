@@ -17,9 +17,9 @@
 
 // algorithm parameters
 // #define LEARN_LIMIT 1000 // !!!!
-#define LEARN_LIMIT 1000
+#define LEARN_LIMIT 100
 // #define PERIOD 10000 // !!!!!!!!!!!!!
-#define PERIOD 10000
+#define PERIOD 1000
 #define Z1 2
 #define Z2 0.5
 
@@ -482,13 +482,15 @@ public:
         // contextSpace.print_context_space();
     }
 
-    explicit PoPCaching(size_t size) : 
+    explicit PoPCaching(size_t size, const size_t & learn_limit = 100, const size_t & period = 1000) :
                 cacheSize(size < 1 ? 1 : size),
                 currentCacheSize(0),
                 cyclesCount(0)
     {                        
-        learn_limit = LEARN_LIMIT;
-        period = PERIOD;
+        // this->learn_limit = LEARN_LIMIT;
+        // this->period = PERIOD;
+        this->learn_limit = learn_limit;
+        this->period = period;
         z1 = Z1;
         z2 = Z2;
 

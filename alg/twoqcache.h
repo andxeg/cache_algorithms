@@ -10,7 +10,8 @@ template <typename Key, typename Value>
 class TwoQCache {
     typedef std::unordered_map<std::string, size_t> ContentSizes;
 public:
-    explicit TwoQCache(size_t size, float mainCacheFactor = 0.60, 
+    explicit TwoQCache(size_t size, const size_t & learn_limit = 100, const size_t & period = 1000, 
+                                    float mainCacheFactor = 0.60, 
                                     float outCacheFactor = 0.20,
                                     float inCacheFactor = 0.20) :
             cacheSize(size < 2 ? 2 : size),

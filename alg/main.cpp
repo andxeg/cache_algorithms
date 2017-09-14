@@ -37,11 +37,13 @@ void printWarmUpItems(std::unordered_set<std::string> warmUpItems) {
 }
 
 template <typename Cache>
-int test(size_t cacheSize, const std::string& fileName) {
+int test(size_t cacheSize, const std::string& fileName, 
+        const size_t & learn_limit = 100, const size_t & period = 1000)
+{
     size_t missed = 0;
     size_t count = 0;
 
-    Cache cache(cacheSize);
+    Cache cache(cacheSize, learn_limit, period);
 
     std::string message = "Start algo.\0";
     struct tm * now = print_current_data_and_time(message);
@@ -116,7 +118,10 @@ int main(int argc, const char* argv[]) {
     std::string::size_type sz = 0;
     size_t cacheSize = std::stoll(std::string(argv[2]), &sz, 0);
 
-    std::string fileName = argv[3];
+    size_t learn_limit = std::stoll(std::string(argv[3]), &sz, 0);
+    size_t period = std::stoll(std::string(argv[4]), &sz, 0);
+
+    std::string fileName = argv[5];
 
     if (cacheType == "mid") {
         return test<MidPointLRUCache<std::string, std::string>>(cacheSize, fileName);
@@ -127,7 +132,7 @@ int main(int argc, const char* argv[]) {
     }
 
     if (cacheType == "pop_caching") {
-        return test<PoPCaching>(cacheSize, fileName);
+        return test<PoPCaching>(cacheSize, fileName, learn_limit, period);
     }
 
     if (cacheType == "lfu") {

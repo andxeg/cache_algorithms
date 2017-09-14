@@ -33,7 +33,7 @@ class MQCache {
     static constexpr size_t OUT_SIZE_MUL  = 4;
 
 public:
-    explicit MQCache(size_t size, size_t lruCount = DEF_LRU_COUNT) :
+    explicit MQCache(size_t size, const size_t & learn_limit = 100, const size_t & period = 1000, size_t lruCount = DEF_LRU_COUNT) :
             cacheSize(size < lruCount ? lruCount : size),
             expireTime(cacheSize * 10),
             currentTime(0),

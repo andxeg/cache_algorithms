@@ -10,7 +10,7 @@ template <typename Key, typename Value>
 class SNLRUCache {
     typedef std::unordered_map<std::string, size_t> ContentSizes;
 public:
-    explicit SNLRUCache(size_t size, size_t lruCount = 4) :
+    explicit SNLRUCache(size_t size, const size_t & learn_limit = 100, const size_t & period = 1000, size_t lruCount = 4) :
             cacheSize(size < lruCount ? lruCount : size),
             currentCacheSize(0) {
         for (size_t index = 0; index < lruCount; ++index) {

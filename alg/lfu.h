@@ -25,7 +25,7 @@ class LFUCache {
     };
 
 public:
-    explicit LFUCache(size_t size) :
+    explicit LFUCache(size_t size, const size_t & learn_limit = 100, const size_t & period = 1000) :
             cacheSize(size < 1 ? 1 : size),
             currentCacheSize(0) {}
 

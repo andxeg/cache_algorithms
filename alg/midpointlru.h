@@ -10,7 +10,7 @@ template <typename Key, typename Value>
 class MidPointLRUCache {
     typedef std::unordered_map<std::string, size_t> ContentSizes;
 public:
-    explicit MidPointLRUCache(size_t size, float point = 0.85) :
+    explicit MidPointLRUCache(size_t size, const size_t & learn_limit = 100, const size_t & period = 1000, float point = 0.85) :
             cacheSize(size < 2 ? 2 : size),
             currentCacheSize(0),
             headSize(ceil(cacheSize * point)),
