@@ -51,7 +51,6 @@ int test(size_t cacheSize, const std::string& fileName,
     int min_start = now->tm_min;
     int sec_start = now->tm_sec;
 
-
     message = "After cache initialization.\0";
     now = print_current_data_and_time(message);
 
@@ -70,7 +69,6 @@ int test(size_t cacheSize, const std::string& fileName,
         if (in.eof()) {
             break;
         }
-
         
         // size = 1; //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

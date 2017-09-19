@@ -55,6 +55,7 @@ typedef std::unordered_map<std::string, std::pair<double, double>> Bounds;
 
 class HyperCube {
 public:
+    HyperCube () {}
     HyperCube(  const size_t & l, const size_t & c, 
                 const size_t sum, const Bounds & b)
     {
@@ -205,14 +206,49 @@ void print_context_vector(const ContextVector & x) {
 }
 
 
+
+struct ContextTreeNode {
+    ContextTreeNode() {
+        hypercube = nullptr;
+    }
+    ~ContextTreeNode() {
+        // std::cout << "~ContextTreeNode()" << std::endl;
+        if (hypercube != nullptr)
+            delete hypercube;
+        // for (auto & child : child_nodes)
+        //     delete child
+        for (int i = child_nodes.size() - 1; i >= 0 ; --i) {
+            if (child_nodes[i] != nullptr)
+                delete child_nodes[i];
+        }
+    }
+
+    HyperCube * hypercube;
+    std::vector<ContextTreeNode *> child_nodes;
+};
+
+typedef ContextTreeNode * ContextTree;
+
+
 class ContextSpace {
+    typedef ContextTreeNode * ContextTree;
     typedef std::unordered_map<std::string, size_t> CidLongLong;
 public:
-    ContextSpace() {}
+    ContextSpace() {
+        z1 = z2 = 0;
+        context_tree_size = 0;
+        max_level = 0;
+        context_tree = nullptr;
+    }
+    ~ContextSpace() {
+        // std::cout << "~ContextSpace()" << std::endl;
+        if (context_tree != nullptr)
+            delete context_tree;
+    }
 
     ContextSpace(std::vector<std::string> time_features,
                 const size_t & c1, const size_t & c2) :
-        z1(c1), z2(c2)
+        z1(c1), z2(c2), context_tree_size(0), max_level(0)
     {
         Bounds bounds;
         directions = time_features;
@@ -223,39 +259,65 @@ public:
             bounds[feature] = edge;
         }
 
-        HyperCube hypercube(0, 1, 0, bounds);
-        hypercubes.push_back(hypercube);
+        HyperCube * hypercube = new HyperCube(0, 1, 0, bounds);
+
+        context_tree = new ContextTreeNode();
+        context_tree->hypercube = hypercube;
+        context_tree_size += 1;
     }
 
-    HyperCube * find_hypercube(ContextVector & x) {
-        // std::cout << "find_hypercube1" << std::endl;
-        // print_context_space();
+    // HyperCube * find_hypercube(ContextVector & x) {
+    //     // std::cout << "find_hypercube1" << std::endl;
+    //     // print_context_space();
 
-        // print_context_vector(x);
-        for (auto & hypercube : hypercubes) {
-            if (hypercube.contain(x))
-                return &hypercube;
+    //     // print_context_vector(x);
+    //     for (auto & hypercube : hypercubes) {
+    //         if (hypercube.contain(x))
+    //             return &hypercube;
+    //     }
+
+    //     // std::cout << "find_hypercube2" << std::endl;
+        
+    //     print_context_space();
+    //     std::cout << "hypercubes.size() -> " << hypercubes.size() << std::endl;
+    //     print_context_vector(x);
+
+
+    //     return nullptr;
+    // }
+
+
+    ContextTree find_hypercube_in_tree(ContextTree tree, ContextVector & x) {
+        if (tree == nullptr)
+            return nullptr;
+
+        HyperCube * hypercube = tree->hypercube;
+        std::vector<ContextTreeNode *> child_nodes = tree->child_nodes;
+
+        if (hypercube->contain(x) == false)
+            return nullptr;
+
+        if (child_nodes.empty()) {
+            // std::cout << "find_hypercube1" << std::endl;
+            return tree;
         }
 
-        // std::cout << "find_hypercube2" << std::endl;
-        
-        print_context_space();
-        std::cout << "hypercubes.size() -> " << hypercubes.size() << std::endl;
-        print_context_vector(x);
+        // current node is not a leaf
+        // child_nodes is not empty then go into tree
 
-        // std::cout << "Error in find hypercube" << std::endl;
-        // Bounds bounds;
-        // for (auto & direction : directions) {
-        //     std::pair<double, double> edge;
-        //     edge.first = -2.0;
-        //     edge.second = -1.0;
-        //     bounds[direction] = edge;
-        // }
+        ContextTree next = nullptr;
 
-        // HyperCube hypercube(0, 1, 0, bounds);
-        // hypercubes.push_back(hypercube);
-        // return &hypercubes.back();
-        return nullptr;
+        for (auto & child : child_nodes) {
+            if (child->hypercube->contain(x)) {
+                next = child;
+                break;
+            }
+        }
+
+        if (next == nullptr)
+            return nullptr;
+
+        return find_hypercube_in_tree(next, x);
     }
 
     void init_splitter(std::string & splitter) {
@@ -286,10 +348,82 @@ public:
         return false;
     }
 
-    void create_new_hypercube(const size_t & level, const size_t & capacity, 
-                const size_t & sum, Bounds & bounds, std::string & splitter)
-    {
-        // std::cout << "create_new_hypercube" << std::endl;
+    // void create_new_hypercube(const size_t & level, const size_t & capacity, 
+    //             const size_t & sum, Bounds & bounds, std::string & splitter)
+    // {
+    //     // std::cout << "create_new_hypercube" << std::endl;
+
+    //     Bounds new_bounds;
+
+    //     // std::cout << level << ' ' << capacity << ' ' << sum << std::endl;
+
+    //     for (size_t i = 0; i < splitter.length(); ++i) {
+    //         std::string direction = directions[i];
+    //         double left = 0.0;
+    //         double right = 0.0;
+    //         std::pair<double, double> pair;
+            
+    //         double delta = bounds[direction].second - bounds[direction].first;
+    //         // may be check if delta < 0
+    //         // it may be if delta is very small
+
+    //         if (splitter[i] == '1') {
+
+    //             left =  bounds[direction].first + delta / 2;
+    //             right = bounds[direction].second;
+    //         } else {
+    //             left = bounds[direction].first;
+    //             right = bounds[direction].first + delta/ 2;
+    //         }
+
+    //         pair = std::make_pair(left, right);
+    //         new_bounds[direction] = pair;
+    //     }
+
+    //     HyperCube new_hypercube = HyperCube(level + 1, capacity, sum, new_bounds);
+    //     // std::cout << new_hypercube << std::endl;
+    //     hypercubes.push_back(new_hypercube);
+    // }
+
+    // void split(HyperCube * hypercube) {
+    //     if (hypercube->overflow(z1, z2) == false)
+    //         return;
+
+    //     if (hypercubes.size() >= 10000)
+    //         return;
+
+    //     // std::cout << "splitting" << std::endl;
+    //     // std::cout << *hypercube << std::endl;
+
+    //     std::string splitter;
+    //     init_splitter(splitter);
+
+    //     Bounds bounds = hypercube->get_bounds();
+    //     size_t level = hypercube->get_level();
+    //     size_t capacity = hypercube->get_capacity();
+    //     size_t sum = hypercube->get_sum_of_request();
+
+    //     auto it = find(hypercubes.begin(), hypercubes.end(), *hypercube);
+    //     hypercubes.erase(it);
+
+
+    //     create_new_hypercube(level, capacity, sum, bounds, splitter);
+
+    //     while (!splitter_exhausted(splitter)) {
+    //         create_new_hypercube(level, capacity, sum, bounds, splitter);
+    //     }
+
+    //     // print_context_space();
+    // }
+
+    
+    void create_new_hypercube_in_tree(ContextTreeNode * node, std::string & splitter) {
+        HyperCube * hypercube = node->hypercube;
+
+        Bounds bounds = hypercube->get_bounds();
+        size_t level = hypercube->get_level();
+        size_t capacity = hypercube->get_capacity();
+        size_t sum = hypercube->get_sum_of_request();
 
         Bounds new_bounds;
 
@@ -304,6 +438,7 @@ public:
             double delta = bounds[direction].second - bounds[direction].first;
             // may be check if delta < 0
             // it may be if delta is very small
+            // may be rounding errors
 
             if (splitter[i] == '1') {
 
@@ -318,16 +453,23 @@ public:
             new_bounds[direction] = pair;
         }
 
-        HyperCube new_hypercube = HyperCube(level + 1, capacity, sum, new_bounds);
-        // std::cout << new_hypercube << std::endl;
-        hypercubes.push_back(new_hypercube);
+        size_t new_level = level + 1;
+        HyperCube * new_hypercube = new HyperCube(new_level, capacity, sum, new_bounds);
+        // std::cout << *new_hypercube << std::endl;
+        if (new_level > max_level)
+            max_level = new_level;
+
+        ContextTreeNode * new_node = new ContextTreeNode();
+        new_node->hypercube = new_hypercube;
+        node->child_nodes.push_back(new_node);
     }
 
-    void split(HyperCube * hypercube) {
+    void split_tree(ContextTreeNode * node) {
+        HyperCube * hypercube = node->hypercube;
         if (hypercube->overflow(z1, z2) == false)
             return;
 
-        if (hypercubes.size() >= 10000)
+        if (context_tree_size >= 10000)
             return;
 
         // std::cout << "splitting" << std::endl;
@@ -336,46 +478,53 @@ public:
         std::string splitter;
         init_splitter(splitter);
 
-        Bounds bounds = hypercube->get_bounds();
-        size_t level = hypercube->get_level();
-        size_t capacity = hypercube->get_capacity();
-        size_t sum = hypercube->get_sum_of_request();
-
-        auto it = find(hypercubes.begin(), hypercubes.end(), *hypercube);
-        hypercubes.erase(it);
-
-
-        create_new_hypercube(level, capacity, sum, bounds, splitter);
+        create_new_hypercube_in_tree(node, splitter);
+        context_tree_size += 1;
 
         while (!splitter_exhausted(splitter)) {
-            create_new_hypercube(level, capacity, sum, bounds, splitter);
+            create_new_hypercube_in_tree(node, splitter);
+            context_tree_size += 1;
         }
-
-        // print_context_space();
     }
 
-    void print_context_space() {
-        if (hypercubes.empty()) {
-            std::cout << "Context Space is empty" << std::endl;
+    void print_context_space(ContextTree tree) {
+        // print hypercubes in leaf of context_tree
+        std::cout << "context space" << std::endl;
+        if (tree == nullptr) {
+            std::cout << "Empty context tree" << std::endl;
             return;
         }
 
-        std::cout << "context space" << std::endl;
-        for (auto & hypercube : hypercubes) {
-            std::cout << hypercube << std::endl;
+        if (tree->child_nodes.empty() == false) {
+            for (auto & child : tree->child_nodes)
+                print_context_space(child);
+            return;
         }
-        std::cout << std::endl;
+
+        HyperCube * hypercube = tree->hypercube;
+        std::cout << *hypercube << std::endl;
+        return;
     }
 
     size_t size() {
-        return hypercubes.size();
+        return context_tree_size;
+    }
+
+    ContextTree get_context_tree() {
+        return context_tree;
+    }
+
+    size_t get_max_level() {
+        return max_level;
     }
 
 private:
     size_t z1;
     size_t z2;
+    size_t context_tree_size;
+    size_t max_level;
     std::vector<std::string> directions;
-    std::vector<HyperCube> hypercubes;
+    ContextTree context_tree;
 };
 
 
@@ -479,7 +628,13 @@ class PoPCaching {
 public:
     
     ~PoPCaching() {
-        // contextSpace.print_context_space();
+        // std::cout << "~PoPCaching()" << std::endl;
+        // ContextTree contextTree = contextSpace->get_context_tree();
+        // contextSpace->print_context_space(contextTree);
+        std::cout << "Max hypercube level -> " << contextSpace->get_max_level() << std::endl;
+        std::cout << "Context space size -> " << contextSpace->size() << std::endl;
+        if (contextSpace != nullptr)
+            delete contextSpace;
     }
 
     explicit PoPCaching(size_t size, const size_t & learn_limit = 100, const size_t & period = 1000) :
@@ -510,17 +665,20 @@ public:
 
         this->periods = periods;
 
-        ContextSpace contextSpace(time_features, z1, z2);
-        // std::cout << "initial context space" << std::endl;
+        ContextSpace * contextSpace = new ContextSpace(time_features, z1, z2);
+        std::cout << "initial context space" << std::endl;
         this->contextSpace = contextSpace;
-        this->contextSpace.print_context_space();
+        ContextTree context_tree = contextSpace->get_context_tree();
+        this->contextSpace->print_context_space(context_tree);
+        std::cout << "cache was initialized" << std::endl;
     }
 
     std::string * find(const std::string & cid, const size_t & current_time) {
         ++cyclesCount;
-        // std::cout << contextSpace.size() << std::endl;
+        // std::cout << contextSpace->size() << std::endl;
 
         // std::cout << "cache::find1" << std::endl;
+
         // std::cout << "lookup.size() -> " << lookup.size() << std::endl;
 
         
@@ -693,33 +851,34 @@ public:
         // NOTE: learn must call only one time or many time if time >= learn_limit
 
         ContextVector context_vector = features.get_context_vector();
-        HyperCube * hypercube = contextSpace.find_hypercube(context_vector);
+        ContextTree context_tree = contextSpace->get_context_tree();
+        ContextTree node = contextSpace->find_hypercube_in_tree(context_tree, context_vector);
 
-        
-        if (hypercube == nullptr) {
-            std::cout << "In learn popularity. hypercube == nullptr" << std::endl;
+        if (node == nullptr) {
+            std::cout << "In learn popularity. node == nullptr" << std::endl;
             exit(127);
         }
         
-
+        HyperCube * hypercube = node->hypercube;
         size_t total_requests = features.get_total_requests();
         hypercube->add_capacity(1);
         hypercube->add_sum_of_requests(total_requests);
-        contextSpace.split(hypercube);
+        contextSpace->split_tree(node);
     }
 
     size_t estimate_popularity(const std::string & cid) {
         Features features = content_features[cid];
         ContextVector context_vector = features.get_context_vector();
-        HyperCube * hypercube = contextSpace.find_hypercube(context_vector);
+        ContextTree context_tree = contextSpace->get_context_tree();
+        ContextTree node = contextSpace->find_hypercube_in_tree(context_tree, context_vector);
 
-
-        if (hypercube == nullptr) {
+        if (node == nullptr) {
             print_context_vector(context_vector);
-            std::cout << "In learn popularity. hypercube == nullptr" << std::endl;
+            std::cout << "In learn popularity. node == nullptr" << std::endl;
             exit(127);
         }
 
+        HyperCube * hypercube = node->hypercube;
         size_t estimation = hypercube->get_estimation();
 
         // std::cout << "estimation -> " << estimation << std::endl;
@@ -741,7 +900,7 @@ private:
     CidLongLong periods;
 
     ContentSizes contentSizes;
-    ContextSpace contextSpace;
+    ContextSpace * contextSpace;
     
     // keep cid -> and value
     Cache lookup;
