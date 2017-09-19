@@ -113,6 +113,16 @@ public:
             size_t idSize = contentSizes[id];
 
             if (idSize < cacheSize) {
+
+                // if current content will be requested only one time
+                // then don't cache it
+                auto iter = itemPositions.find(id);
+                auto & positionList = iter->second;
+                if (positionList.size() == 2) {
+                    modifyPositionHolder(id);                    
+                    ++cyclesCount;
+                    return;
+                }
                 
                 while ((idSize + getCacheSize()) > cacheSize) {
                     freeUpSpace();

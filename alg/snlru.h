@@ -6,9 +6,13 @@
 #include <vector>
 #include <cmath>
 
+#define REQUESTS_TRESHOLD 2
+
+
 template <typename Key, typename Value>
 class SNLRUCache {
     typedef std::unordered_map<std::string, size_t> ContentSizes;
+    typedef std::unordered_map<std::string, size_t> CandidateList;
 public:
     explicit SNLRUCache(size_t size, const size_t & learn_limit = 100, const size_t & period = 1000, size_t lruCount = 4) :
             cacheSize(size < lruCount ? lruCount : size),
@@ -24,6 +28,13 @@ public:
     }
 
     Value* find(const Key &key, const size_t & current_time = 0) {
+        CandidateList::iterator it = candidateList.find(key);
+        if (it == candidateList.end()) {
+            candidateList[key] = 0;
+        }
+
+        candidateList[key] += 1;
+
         for (size_t index = 0; index < lruList.size() - 1; ++index) {
             Value *value = lruList[index].find(key);
             if (value) {
@@ -37,10 +48,17 @@ public:
     }
 
     Value* put(const Key &key, const Value &value) {
-        Value *result = find(key);
-        if (result) {
-            return result;
+        // Value *result = find(key);
+        // if (result) {
+        //     return result;
+        // }
+
+        size_t requests_count = candidateList[key];
+        
+        if (requests_count <= REQUESTS_TRESHOLD && requests_count > 1) {
+            return nullptr;
         }
+
 
         return lruList.front().put(key, value);
     }
@@ -106,4 +124,6 @@ private:
     std::vector<LRUCache<Key, Value>> lruList;
 
     ContentSizes contentSizes;
+
+    CandidateList candidateList;
 };
