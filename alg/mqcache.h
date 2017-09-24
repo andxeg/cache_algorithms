@@ -87,7 +87,7 @@ public:
         return nullptr;
     }
 
-    Value* put(const Key &key, const Value &value) {
+    Value* put(const Key &key, const Value &value, const size_t & current_time = 0) {
         Value *result = find(key);
         if (result) {
             return result;

@@ -26,7 +26,7 @@ public:
         return &promote(it->second)->second;
     }
 
-    Value* put(const Key &key, const Value &value) {
+    Value* put(const Key &key, const Value &value, const size_t & current_time = 0) {
         Value *result = find(key);
         if (result) {
             return result;
@@ -64,7 +64,7 @@ public:
         return true;
     }
 
-    void setEvictionCallback(std::function<void(const Key &,const Value &)> callback) {
+    void setEvictionCallback(std::function<void(const Key &,const Value &, const size_t & current_time)> callback) {
         evictionCallback = callback;
     }
 
@@ -115,7 +115,7 @@ private:
     void makeSizeInvariant(size_t size) {
         while (getCacheSize() > size) {
             if (evictionCallback) {
-                evictionCallback(lruList.front().first, lruList.front().second);
+                evictionCallback(lruList.front().first, lruList.front().second, 0);
             }
 
             size_t cidSize = contentSizes[lruList.front().first];
@@ -144,7 +144,7 @@ public:
     std::unordered_map<Key, typename LruList::iterator> lookup;
     size_t cacheSize;
     std::function<Value(const Key&)> getFunction;
-    std::function<void(const Key &,const Value &)> evictionCallback;
+    std::function<void(const Key &,const Value &, const size_t & current_time)> evictionCallback;
 
     size_t currentCacheSize;
     ContentSizes contentSizes;

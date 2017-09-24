@@ -20,47 +20,47 @@ public:
         for (size_t index = 0; index < lruCount; ++index) {
             lruList.push_back(LRUCache<Key, Value>(floor(float(cacheSize) / lruCount)));
             if (index != 0) {
-                lruList.back().setEvictionCallback([=](const Key &key, const Value &value) {
-                    this->lruList[index - 1].put(key, value);
+                lruList.back().setEvictionCallback([=](const Key &key, const Value &value, const size_t & current_time ) {
+                    this->lruList[index - 1].put(key, value, current_time);
                 });
             }
         }
     }
 
     Value* find(const Key &key, const size_t & current_time = 0) {
-        CandidateList::iterator it = candidateList.find(key);
-        if (it == candidateList.end()) {
-            candidateList[key] = 0;
-        }
+        // CandidateList::iterator it = candidateList.find(key);
+        // if (it == candidateList.end()) {
+        //     candidateList[key] = 0;
+        // }
 
-        candidateList[key] += 1;
+        // candidateList[key] += 1;
 
         for (size_t index = 0; index < lruList.size() - 1; ++index) {
-            Value *value = lruList[index].find(key);
+            Value *value = lruList[index].find(key, current_time);
             if (value) {
-                value = lruList[index + 1].put(key, *value);
+                value = lruList[index + 1].put(key, *value, current_time);
                 lruList[index].erase(key);
                 return value;
             }
         }
 
-        return lruList.back().find(key);
+        return lruList.back().find(key, current_time);
     }
 
-    Value* put(const Key &key, const Value &value) {
+    Value* put(const Key &key, const Value &value, const size_t & current_time = 0) {
         // Value *result = find(key);
         // if (result) {
         //     return result;
         // }
 
-        size_t requests_count = candidateList[key];
+        // size_t requests_count = candidateList[key];
         
-        if (requests_count <= REQUESTS_TRESHOLD && requests_count > 1) {
-            return nullptr;
-        }
+        // if (requests_count <= REQUESTS_TRESHOLD && requests_count > 1) {
+        //     return nullptr;
+        // }
 
 
-        return lruList.front().put(key, value);
+        return lruList.front().put(key, value, current_time);
     }
 
     bool erase(const Key &key) {
@@ -125,5 +125,5 @@ private:
 
     ContentSizes contentSizes;
 
-    CandidateList candidateList;
+    // CandidateList candidateList;
 };

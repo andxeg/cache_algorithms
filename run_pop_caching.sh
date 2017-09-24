@@ -20,11 +20,7 @@ for period in $(seq $RE_ESTIMATION_PERIODS_MIN $RE_ESTIMATION_PERIODS_STEP $RE_E
 do
 	for learn_limit in $(seq $MIN_LEARN_LIMIT $LEARN_LIMIT_STEP $MAX_LEARN_LIMIT)
 	do
-<<<<<<< Updated upstream
-		# mkdir "/home/soc/ARCCN/results_pop_caching/l_"$learn_limit"_re_"$period
-=======
 		mkdir "/home/soc/ARCCN/results_pop_caching/l_"$learn_limit"_re_"$period
->>>>>>> Stashed changes
 		DIR="/home/soc/ARCCN/results_pop_caching/l_"$learn_limit"_re_"$period
 		i=0
 		for size in $SIZES

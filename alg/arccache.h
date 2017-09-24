@@ -36,7 +36,7 @@ public:
         return nullptr;
     }
 
-    Value* put(const Key &key, const Value &value) {
+    Value* put(const Key &key, const Value &value, const size_t & current_time = 0) {
         if (bottom1Lru.find(key)) {
             splitPoint = std::min(cacheSize, splitPoint + std::max(bottom2Lru.size() / bottom1Lru.size(), size_t(1)));
             replace(key);

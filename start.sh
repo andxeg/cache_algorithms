@@ -11,15 +11,25 @@ RE_ESTIMATION_PERIOD=10000
 if [ $# -eq 0 ]
 then
 	echo "Some arguments were missed."
-	echo "Example: ./start.sh ./build/alg/cachealg lru <learn_period> <re_estimation_period> dataset2/cid_size/pid_5.csv"
+	echo "Example: ./start.sh ./build/alg/cachealg lru dataset2/cid_size/pid_5.csv"
 	exit
 fi
 
+declare -a pids
 
+i=0
 for size in $SIZES
 do
 	echo $ALGO_PATH $CACHE_POLICY $size $LEARN_PERIOD $RE_ESTIMATION_PERIOD $DATASET_PATH
-	$ALGO_PATH $CACHE_POLICY $size $LEARN_PERIOD $RE_ESTIMATION_PERIOD $DATASET_PATH
+	$ALGO_PATH $CACHE_POLICY $size $LEARN_PERIOD $RE_ESTIMATION_PERIOD $DATASET_PATH > ./build/$size".txt" &
+	pids[${i}]=$!
+	let "i+=1"
+done
+
+echo "waiting"
+for pid in ${pids[*]}
+do
+	wait $pid
 done
 
 # for results

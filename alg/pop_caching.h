@@ -720,7 +720,7 @@ public:
         return &it->second;
     }
 
-    std::string * put(const std::string & cid, const std::string & value) {
+    std::string * put(const std::string & cid, const std::string & value, const size_t & current_time = 0) {
         // std::cout << "cache::put1" << std::endl;
         // std::cout << "lookup.size() -> " << lookup.size() << std::endl;
         // std::cout << "estimations.size() -> " << estimations.size() << std::endl;

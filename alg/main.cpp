@@ -8,6 +8,7 @@
 #include "twoqcache.h"
 
 #include "pop_caching.h"
+#include "lru_K.h"
 
 #include <cmath>
 #include <cassert>
@@ -79,7 +80,7 @@ int test(size_t cacheSize, const std::string& fileName,
 
         if (!value) {
             ++missed;
-            value = cache.put(id, id);
+            value = cache.put(id, id, access_time);
         }
 
         ++count;
@@ -112,10 +113,16 @@ int test(size_t cacheSize, const std::string& fileName,
 }
 
 int main(int argc, const char* argv[]) {
+    if (argc != 6) {
+        std::cerr << "Error in input paramters" << std::endl;
+        return -1;
+    }
+
     std::string cacheType = argv[1];
     std::string::size_type sz = 0;
     size_t cacheSize = std::stoll(std::string(argv[2]), &sz, 0);
 
+    // Parameters for PoPCaching and LRU_K
     size_t learn_limit = std::stoll(std::string(argv[3]), &sz, 0);
     size_t period = std::stoll(std::string(argv[4]), &sz, 0);
 
@@ -128,6 +135,10 @@ int main(int argc, const char* argv[]) {
     if (cacheType == "lru") {
         return test<LRUCache<std::string, std::string>>(cacheSize, fileName);
     }
+
+    if (cacheType == "lru_k") {
+        return test<LRU_K_Cache<std::string, std::string>>(cacheSize, fileName, learn_limit, period);
+    }    
 
     if (cacheType == "pop_caching") {
         return test<PoPCaching>(cacheSize, fileName, learn_limit, period);
