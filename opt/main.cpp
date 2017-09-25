@@ -41,16 +41,20 @@ public:
             missCount(0),
             cyclesCount(0),
             currentCacheSize(0),
-            requestsFileName(fileName)
+            requestsFileName(fileName),
+            cacheHit(0),
+            totalRequests(0)
     {
 
         std::ifstream in(fileName);
         size_t pos = 0;
 
         while (true) {
+            size_t access_time;
             std::string id;
             size_t size;
 
+            in >> access_time;
             in >> id;
             in >> size;
 
@@ -103,6 +107,10 @@ public:
 
         ++cyclesCount;
 
+        size_t cidSize = contentSizes[id];
+        cacheHit += cidSize;
+        totalRequests += cidSize;
+
         return true;
     }
 
@@ -111,6 +119,7 @@ public:
             ++missCount;
             
             size_t idSize = contentSizes[id];
+            totalRequests += idSize;
 
             if (idSize < cacheSize) {
 
@@ -144,6 +153,10 @@ public:
 
     float hitRate() const {
         return cyclesCount != 0 ? 100 * (cyclesCount - missCount) / float(cyclesCount) : -1;
+    }
+
+    float byteHitRate() const {
+        return totalRequests != 0 ? 100 * float(cacheHit) / totalRequests : -1;
     }
 
     size_t getCacheSize() {
@@ -182,6 +195,8 @@ private:
     size_t cyclesCount;
     size_t currentCacheSize;
     std::string requestsFileName;
+    size_t cacheHit;
+    size_t totalRequests;
     ContentSizes contentSizes;
 
     ItemPositions itemPositions;
@@ -241,9 +256,11 @@ int main(int argc, const char* argv[]) {
     std::ifstream in(fileName);
 
     while (true) {
+        size_t access_time;
         std::string id;
         size_t size;
 
+        in >> access_time;
         in >> id;
         in >> size;
 
@@ -273,6 +290,7 @@ int main(int argc, const char* argv[]) {
     std::cout << "\nAlgorithm results:\n";
     std::cout << "Cache size -> " << cacheSize << " Kbyte" << std::endl;
     std::cout << "Hit-rate -> " << cache.hitRate() << std::endl;
+    std::cout << "Byte Hit-rate -> " << cache.byteHitRate() << std::endl;
 
     std::cout << std::endl;
 

@@ -44,6 +44,9 @@ int test(size_t cacheSize, const std::string& fileName,
     size_t missed = 0;
     size_t count = 0;
 
+    size_t cacheHit = 0;
+    size_t totalRequests = 0;
+
     Cache cache(cacheSize, learn_limit, period);
 
     std::string message = "Start algo.\0";
@@ -81,9 +84,12 @@ int test(size_t cacheSize, const std::string& fileName,
         if (!value) {
             ++missed;
             value = cache.put(id, id, access_time);
+        } else {
+            cacheHit += size;
         }
 
         ++count;
+        totalRequests += size;
 
         if (count % 1000 == 0) {
           std::cerr << "Process " << count << "\n";
@@ -100,6 +106,8 @@ int test(size_t cacheSize, const std::string& fileName,
     std::cout << "Cache size -> " << cacheSize << " Kbyte" << std::endl;
     std::cout << "Hit-rate -> " << 
                 (count != 0 ? 100 * (count - missed) / float(count) : -1)  << std::endl;
+
+    std::cout << "Byte Hit-rate -> " << (totalRequests != 0 ? 100 * cacheHit / float(totalRequests) : -1) << std::endl;
 
     std::cout << std::endl;
 
