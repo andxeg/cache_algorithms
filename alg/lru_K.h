@@ -4,6 +4,7 @@
 #include <limits>
 #include <cstdlib>
 #include <utility>
+#include <vector>
 #include <iostream>
 #include <functional>
 #include <unordered_map>

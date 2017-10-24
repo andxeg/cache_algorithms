@@ -34,4 +34,4 @@ done
 
 # for results
 # type command
-# ./start.sh ./build/alg/cachealg lru dataset2/cid_size/pid_5.csv > out.txt ; cat out.txt | grep Hit
+# ./start.sh .//build/alg/cachealg s4lru dataset2/pids_without_exceptional_contents/dataset2_pid_5_time_cid_size_without_except_content.log

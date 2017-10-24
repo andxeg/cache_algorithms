@@ -1,11 +1,13 @@
 #pragma once
 
+#include <list>
+#include <utility>
 #include <cstdlib>
 #include <cassert>
+#include <iostream>
 #include <functional>
-#include <list>
 #include <unordered_map>
-#include <utility>
+
 
 template <typename Key, typename Value>
 class LFUCache {
