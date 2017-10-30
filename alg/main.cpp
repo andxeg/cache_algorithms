@@ -45,11 +45,11 @@ struct PeriodStat {
     }
 
     float object_hit_rate() const {
-        return (requests != 0) ? static_cast<float>(hit) / requests : -1.0;
+        return (requests != 0) ? static_cast<float>(hit) / requests : 0.0;
     }
 
     float byte_hit_rate() const {
-        return (requests_bytes != 0) ? static_cast<float>(hit_bytes) / requests_bytes : -1.0;
+        return (requests_bytes != 0) ? static_cast<float>(hit_bytes) / requests_bytes : 0.0;
     }
 };
 
