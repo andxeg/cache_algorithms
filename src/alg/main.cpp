@@ -8,6 +8,8 @@
 #include "pop_caching.h"
 #include "timestamps.h"
 
+#include "config.h"
+
 
 #include "arccache.h"
 #include "mqcache.h"
@@ -114,12 +116,23 @@ void print_algorithm_results(const TotalStat & total_stat,
 
 
 template <typename Cache>
-int test(size_t cacheSize, const std::string& fileName, 
+int test(size_t cacheSize, const std::string& fileName, Config &config,
         const size_t & learn_limit = 100, const size_t & period = 1000)
 {
     TotalStat total_stat;
     PeriodsStatistics periods_stat;
     periods_stat.push_back(PeriodStat());
+    // std::cout << "config_file start" << std::endl;
+    // config.print();
+    // std::cout << "config_file end" << std::endl;
+    
+    // std::cout << config.get_int_by_name(std::string("learn_period")) << std::endl;
+    // std::cout << config.get_float_by_name(std::string("alpha")) << std::endl;
+    // std::cout << config.get_str_by_name(std::string("cms_file_path")) << std::endl;
+    // std::cout << config.get_int_by_name(std::string("period")) << std::endl;
+    // std::cout << config.get_float_by_name(std::string("beta")) << std::endl;
+    // std::cout << config.get_str_by_name(std::string("cms_file_name")) << std::endl;
+
     Cache cache(cacheSize, learn_limit, period);
     
     struct tm * now = print_current_data_and_time("Start algo.");
@@ -184,12 +197,13 @@ int test(size_t cacheSize, const std::string& fileName,
 }
 
 int main(int argc, const char* argv[]) {
-    if (argc != 6) {
-        std::cerr << "Error in input paramters" << std::endl;
+    if (argc != 7) {
+        std::cerr << "Error in input parameters" << std::endl;
         return -1;
     }
 
-    // TODO add config file and put all parameters in it
+    Config config = Config(std::string(argv[6])); // OK
+    // Config config(std::string(argv[6])); // error
 
     std::string cacheType = argv[1];
     std::string::size_type sz = 0;
@@ -202,43 +216,44 @@ int main(int argc, const char* argv[]) {
     std::string fileName = argv[5];
 
     if (cacheType == "mid") {
-        return test<MidPointLRUCache<std::string, std::string>>(cacheSize, fileName);
+        return test<MidPointLRUCache<std::string, std::string>>(cacheSize, fileName, config);
     }
 
     if (cacheType == "lru") {
-        return test<LRUCache<std::string, std::string>>(cacheSize, fileName);
+        return test<LRUCache<std::string, std::string>>(cacheSize, fileName, config);
     }
 
     if (cacheType == "lru_k") {
-        return test<LRU_K_Cache<std::string, std::string>>(cacheSize, fileName, learn_limit, period);
+        return test<LRU_K_Cache<std::string, std::string>>
+                (cacheSize, fileName, config, learn_limit, period);
     }    
 
     if (cacheType == "pop_caching") {
-        return test<PoPCaching>(cacheSize, fileName, learn_limit, period);
+        return test<PoPCaching>(cacheSize, fileName, config, learn_limit, period);
     }
 
     if (cacheType == "lfu") {
-        return test<LFUCache<std::string, std::string>>(cacheSize, fileName);
+        return test<LFUCache<std::string, std::string>>(cacheSize, fileName, config);
     }
 
     if (cacheType == "2q") {
-        return test<TwoQCache<std::string, std::string>>(cacheSize, fileName);
+        return test<TwoQCache<std::string, std::string>>(cacheSize, fileName, config);
     }
 
     if (cacheType == "s4lru") {
-        return test<SNLRUCache<std::string, std::string>>(cacheSize, fileName);
+        return test<SNLRUCache<std::string, std::string>>(cacheSize, fileName, config);
     }
 
     if (cacheType == "fifo") {
-        return test<FifoCache<std::string, std::string>>(cacheSize, fileName);
+        return test<FifoCache<std::string, std::string>>(cacheSize, fileName, config);
     }
 
     if (cacheType == "mq") {
-        return test<MQCache<std::string, std::string>>(cacheSize, fileName);
+        return test<MQCache<std::string, std::string>>(cacheSize, fileName, config);
     }
 
     if (cacheType == "arc") {
-        return test<ARCCache<std::string, std::string>>(cacheSize, fileName);
+        return test<ARCCache<std::string, std::string>>(cacheSize, fileName, config);
     }
 
     std::cout << "Unknown cache type " << cacheType << "\n";

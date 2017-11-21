@@ -7,6 +7,7 @@ SIZES="1000000000 4493148160 6740246528 8987344896 13481541632 22469935104"
 DATASET_PATH="/home/andrew/MEGA/ARCCN_CDN/second_stage/user_log/analyze_user_log_backup_22_08_2017/"$3
 LEARN_PERIOD=1000
 RE_ESTIMATION_PERIOD=10000
+CONFIG_PATH="/home/andrew/MEGA/ARCCN_CDN/second_stage/code/cache_algorithms/src/config.cfg"
 
 if [ $# -eq 0 ]
 then
@@ -20,8 +21,8 @@ declare -a pids
 i=0
 for size in $SIZES
 do
-	echo $ALGO_PATH $CACHE_POLICY $size $LEARN_PERIOD $RE_ESTIMATION_PERIOD $DATASET_PATH
-	$ALGO_PATH $CACHE_POLICY $size $LEARN_PERIOD $RE_ESTIMATION_PERIOD $DATASET_PATH > ./build/$size".txt" &
+	echo $ALGO_PATH $CACHE_POLICY $size $LEARN_PERIOD $RE_ESTIMATION_PERIOD $DATASET_PATH $CONFIG_PATH
+	$ALGO_PATH $CACHE_POLICY $size $LEARN_PERIOD $RE_ESTIMATION_PERIOD $DATASET_PATH $CONFIG_PATH > ./build/$size".txt" &
 	pids[${i}]=$!
 	let "i+=1"
 done
