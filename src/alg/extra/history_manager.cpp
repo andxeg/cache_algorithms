@@ -9,7 +9,7 @@
 
 
 HistoryManager::HistoryManager(Config &config) {
-	period_size = config.get_int_by_name(std::string("HISTORY_PERIOD_SIZE"));
+	period_size = config.get_int_by_name("HISTORY_PERIOD_SIZE");
 }
 
 void HistoryManager::start_new_period() {
@@ -26,7 +26,7 @@ void HistoryManager::update_object_history(std::string &object_id,
 	objects_history[object_id].back()++;
 }
 
-std::vector<int> 
+std::vector<int>
 HistoryManager::get_object_history(std::string &object_id) {
 	auto it = objects_history.find(object_id);
 	if (it == objects_history.end()) {

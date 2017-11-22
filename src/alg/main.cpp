@@ -11,6 +11,7 @@
 #include "defs.h"
 #include "config.h"
 #include "history_manager.h"
+#include "pre_push.h"
 
 
 #include "arccache.h"
@@ -141,10 +142,12 @@ int test(size_t cacheSize, const std::string& filename, Config &config,
     PeriodsStatistics periods_stat;
     periods_stat.push_back(PeriodStat());
 
-    size_t period_size = config.get_int_by_name(std::string("STAT_PERIOD_SIZE"));
+    // size_t period_size = config.get_int_by_name(std::string("STAT_PERIOD_SIZE"));
+    size_t period_size = config.get_int_by_name("STAT_PERIOD_SIZE");
     
     Cache cache(cacheSize, learn_limit, period);
     HistoryManager history_manager(config);
+    PrePush pre_push(config);
     
     print_current_data_and_time("Start read cids sizes.");
     read_cids_size(cache, filename);
@@ -209,6 +212,8 @@ int test(size_t cacheSize, const std::string& filename, Config &config,
 
     print_algorithm_results<Cache>(total_stat, periods_stat, cache, cacheSize);
     history_manager.print_history();
+    pre_push.print_mother_child();
+    pre_push.print_child_mother();
     return 0;
 }
 
