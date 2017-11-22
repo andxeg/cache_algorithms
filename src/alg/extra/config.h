@@ -1,5 +1,6 @@
 #pragma once
 
+#include "defs.h"
 #include <unordered_map>
 
 
@@ -15,4 +16,3 @@ public:
 private:
 	ConfigMap config_map;
 };
-

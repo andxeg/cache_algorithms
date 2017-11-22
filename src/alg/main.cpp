@@ -8,7 +8,9 @@
 #include "pop_caching.h"
 #include "timestamps.h"
 
+#include "defs.h"
 #include "config.h"
+#include "history_manager.h"
 
 
 #include "arccache.h"
@@ -25,8 +27,6 @@
 #include <vector>
 #include <unordered_set>
 
-
-#define PERIOD_SIZE 86400
 
 struct PeriodStat;
 typedef std::vector<PeriodStat> PeriodsStatistics;
@@ -88,8 +88,8 @@ struct TotalStat {
 };
 
 template <typename Cache>
-void print_algorithm_results(const TotalStat & total_stat, 
-    const PeriodsStatistics & periods_stat, Cache & cache, const size_t & cache_size)
+void print_algorithm_results(const TotalStat &total_stat, 
+    const PeriodsStatistics &periods_stat, Cache &cache, const size_t &cache_size)
 {
     std::cout << "Algorithm results:" << std::endl;
     std::cout << "Cache size " << cache_size << " Kbytes" << std::endl;
@@ -114,35 +114,48 @@ void print_algorithm_results(const TotalStat & total_stat,
     std::cout << std::endl; std::cout << std::endl; std::cout << std::endl;
 }
 
+template<typename Cache>
+void read_cids_size(Cache &cache, const std::string &filename) {
+    std::fstream input(filename);
+    if (!input.is_open()) {
+        std::cerr << "[ERROR] Error while opening file " 
+                    << filename << std::endl;
+        return;
+    }
+    std::string id;
+    size_t size = 0;
+    while (true) {
+        input >> size >> id >> size;
+        if (input.eof() && size == 0) break;
+        cache.addCidSize(id, size);
+        size = 0;
+    }
+    input.close();
+}
 
 template <typename Cache>
-int test(size_t cacheSize, const std::string& fileName, Config &config,
+int test(size_t cacheSize, const std::string& filename, Config &config,
         const size_t & learn_limit = 100, const size_t & period = 1000)
 {
     TotalStat total_stat;
     PeriodsStatistics periods_stat;
     periods_stat.push_back(PeriodStat());
-    // std::cout << "config_file start" << std::endl;
-    // config.print();
-    // std::cout << "config_file end" << std::endl;
-    
-    // std::cout << config.get_int_by_name(std::string("learn_period")) << std::endl;
-    // std::cout << config.get_float_by_name(std::string("alpha")) << std::endl;
-    // std::cout << config.get_str_by_name(std::string("cms_file_path")) << std::endl;
-    // std::cout << config.get_int_by_name(std::string("period")) << std::endl;
-    // std::cout << config.get_float_by_name(std::string("beta")) << std::endl;
-    // std::cout << config.get_str_by_name(std::string("cms_file_name")) << std::endl;
 
+    size_t period_size = config.get_int_by_name(std::string("STAT_PERIOD_SIZE"));
+    
     Cache cache(cacheSize, learn_limit, period);
+    HistoryManager history_manager(config);
+    
+    print_current_data_and_time("Start read cids sizes.");
+    read_cids_size(cache, filename);
+    print_current_data_and_time("After cache initialization.");
     
     struct tm * now = print_current_data_and_time("Start algo.");
     int hour_start = now->tm_hour;
     int min_start = now->tm_min;
     int sec_start = now->tm_sec;
 
-    print_current_data_and_time("After cache initialization.");
-
-    std::ifstream in(fileName);
+    std::ifstream in(filename);
     
     std::string id;
     size_t access_time, size;
@@ -154,14 +167,16 @@ int test(size_t cacheSize, const std::string& fileName, Config &config,
         
         if (in.eof()) {break;}
 
-        if ((access_time - prev_period_end) >= PERIOD_SIZE) {
+        if ((access_time - prev_period_end) >= period_size) {
             periods_stat.back().end = access_time;
             periods_stat.push_back(PeriodStat());
             periods_stat.back().start = access_time;
             prev_period_end = access_time;
+            history_manager.start_new_period();
         }
 
         cache.addCidSize(id, size);
+        history_manager.update_object_history(id, periods_stat.size());
         
         if (cache.find(id, access_time) == nullptr) {
             cache.put(id, id, access_time);
@@ -193,6 +208,7 @@ int test(size_t cacheSize, const std::string& fileName, Config &config,
                 << (time % 3600) % 60 << " secs" << std::endl;
 
     print_algorithm_results<Cache>(total_stat, periods_stat, cache, cacheSize);
+    history_manager.print_history();
     return 0;
 }
 
@@ -213,47 +229,47 @@ int main(int argc, const char* argv[]) {
     size_t learn_limit = std::stoll(std::string(argv[3]), &sz, 0);
     size_t period = std::stoll(std::string(argv[4]), &sz, 0);
 
-    std::string fileName = argv[5];
+    std::string filename = argv[5];
 
     if (cacheType == "mid") {
-        return test<MidPointLRUCache<std::string, std::string>>(cacheSize, fileName, config);
+        return test<MidPointLRUCache<std::string, std::string>>(cacheSize, filename, config);
     }
 
     if (cacheType == "lru") {
-        return test<LRUCache<std::string, std::string>>(cacheSize, fileName, config);
+        return test<LRUCache<std::string, std::string>>(cacheSize, filename, config);
     }
 
     if (cacheType == "lru_k") {
         return test<LRU_K_Cache<std::string, std::string>>
-                (cacheSize, fileName, config, learn_limit, period);
+                (cacheSize, filename, config, learn_limit, period);
     }    
 
     if (cacheType == "pop_caching") {
-        return test<PoPCaching>(cacheSize, fileName, config, learn_limit, period);
+        return test<PoPCaching>(cacheSize, filename, config, learn_limit, period);
     }
 
     if (cacheType == "lfu") {
-        return test<LFUCache<std::string, std::string>>(cacheSize, fileName, config);
+        return test<LFUCache<std::string, std::string>>(cacheSize, filename, config);
     }
 
     if (cacheType == "2q") {
-        return test<TwoQCache<std::string, std::string>>(cacheSize, fileName, config);
+        return test<TwoQCache<std::string, std::string>>(cacheSize, filename, config);
     }
 
     if (cacheType == "s4lru") {
-        return test<SNLRUCache<std::string, std::string>>(cacheSize, fileName, config);
+        return test<SNLRUCache<std::string, std::string>>(cacheSize, filename, config);
     }
 
     if (cacheType == "fifo") {
-        return test<FifoCache<std::string, std::string>>(cacheSize, fileName, config);
+        return test<FifoCache<std::string, std::string>>(cacheSize, filename, config);
     }
 
     if (cacheType == "mq") {
-        return test<MQCache<std::string, std::string>>(cacheSize, fileName, config);
+        return test<MQCache<std::string, std::string>>(cacheSize, filename, config);
     }
 
     if (cacheType == "arc") {
-        return test<ARCCache<std::string, std::string>>(cacheSize, fileName, config);
+        return test<ARCCache<std::string, std::string>>(cacheSize, filename, config);
     }
 
     std::cout << "Unknown cache type " << cacheType << "\n";
