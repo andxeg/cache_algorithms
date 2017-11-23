@@ -9,3 +9,4 @@ typedef std::unordered_map<std::string, VecInt> ObjectsHistory;
 typedef std::unordered_map<std::string, std::string> ConfigMap;
 typedef std::unordered_map<std::string, VecStr> MotherChildMap;
 typedef std::unordered_map<std::string, std::string> ChildMotherMap;
+typedef std::unordered_map<std::string, size_t> ContentSizes;

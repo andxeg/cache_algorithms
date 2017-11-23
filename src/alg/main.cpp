@@ -12,6 +12,7 @@
 #include "config.h"
 #include "history_manager.h"
 #include "pre_push.h"
+#include "size_filter.h"
 
 
 #include "arccache.h"
@@ -136,7 +137,9 @@ void read_cids_size(Cache &cache, const std::string &filename) {
 
 template<typename Cache>
 void make_pre_push(Cache &cache, PrePush &pre_push,
-                    HistoryManager &history_manager, Config &config) {
+                    HistoryManager &history_manager, 
+                    SizeFilter &size_filter,
+                    Config &config) {
     float cache_hot_content = config.get_float_by_name("CACHE_HOT_CONTENT");
 
     /* take hot content from cache */
@@ -146,11 +149,15 @@ void make_pre_push(Cache &cache, PrePush &pre_push,
 
     /* add hot_content to cache */
     /* hot_content may contains elements which are already in cache */
+    ContentSizes contentSizes = cache.getContentSizes();
     int count = 0;
+    size_t size = 0;
     for (auto &content : hot_content) {
         if (cache.find(content) == nullptr) {
             ++count;
-            cache.put(content, content);
+            size = contentSizes[content];
+            if (size_filter.admit_object(content, size, history_manager) == true)
+                cache.put(content, content);
         }
     }
 
@@ -159,6 +166,7 @@ void make_pre_push(Cache &cache, PrePush &pre_push,
                                 std::string(", new elements: ") +
                                 ToString<int>(count));
 }
+
 
 template <typename Cache>
 int test(size_t cacheSize, const std::string& filename, Config &config,
@@ -170,10 +178,12 @@ int test(size_t cacheSize, const std::string& filename, Config &config,
 
     // size_t period_size = config.get_int_by_name(std::string("STAT_PERIOD_SIZE"));
     size_t period_size = config.get_int_by_name("STAT_PERIOD_SIZE");
+    size_t start_pre_push = config.get_int_by_name("START_PRE_PUSH");
     
     Cache cache(cacheSize, learn_limit, period);
     HistoryManager history_manager(config);
     PrePush pre_push(config);
+    SizeFilter size_filter(config);
     
     print_current_data_and_time("Start read cids sizes.");
     read_cids_size(cache, filename);
@@ -192,24 +202,31 @@ int test(size_t cacheSize, const std::string& filename, Config &config,
     size_t prev_period_end = access_time;
     periods_stat.back().start = access_time;
 
+    ContentSizes contentSizes = cache.getContentSizes();
+
     while (true) {
         
         if (in.eof()) {break;}
 
         if ((access_time - prev_period_end) >= period_size) {
+            /* now start for pre_push and size_filter are the same */
+            if (periods_stat.size() >= start_pre_push) {
+                size_filter.update_threshold(history_manager, contentSizes);
+                make_pre_push(cache, pre_push, history_manager, size_filter, config);
+            }
             periods_stat.back().end = access_time;
             periods_stat.push_back(PeriodStat());
             periods_stat.back().start = access_time;
             prev_period_end = access_time;
             history_manager.start_new_period();
-            make_pre_push(cache, pre_push, history_manager, config);
         }
 
         cache.addCidSize(id, size);
         history_manager.update_object_history(id, periods_stat.size());
         
         if (cache.find(id, access_time) == nullptr) {
-            cache.put(id, id, access_time);
+            if (size_filter.admit_object(id, size, history_manager) == true)
+                cache.put(id, id, access_time);
         } else {
             total_stat.hit += 1;
             total_stat.hit_bytes += size;

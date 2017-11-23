@@ -1,8 +1,10 @@
 #include "config.h"
 
+#include <string>
 #include <fstream>
 #include <iostream>
 #include "timestamps.h"
+
 
 Config::Config(const std::string &filename) {
 	std::fstream input(filename, std::fstream::in);
@@ -11,12 +13,21 @@ Config::Config(const std::string &filename) {
 					<< filename << std::endl;
 		return;
 	}
-	std::string name, value;
+
+	std::string line;
 	while (true) {
-		input >> name >> value;
-		if (input.eof() && value == "" && name == "") break;
-		config_map[name] = value;
-		name = value = std::string("");
+		input >> line;
+		if (input.eof()  && line == "") break;
+
+		std::size_t pos = line.find('=');
+		if (pos == std::string::npos) {
+			std::cerr << "[ERROR] Error while read file " 
+					<< filename << std::endl;	
+			return;
+		}
+
+		config_map[line.substr(0, pos)] = line.substr(pos+1);
+		line = std::string("");
 	}
 	input.close();
 }

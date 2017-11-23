@@ -9,6 +9,9 @@
 #include <functional>
 #include <utility>
 
+#define MAX(X, Y) ((X) > (Y) ? (X) : (Y))
+
+
 template <typename Key, typename Value>
 class LRUCache {
     typedef std::list<std::pair<Key, Value>> LruList;
@@ -114,7 +117,16 @@ public:
     }
 
     VecStr get_hot_content(const float &cache_hot_content) {
-        return VecStr();
+        VecStr hot_content;
+        int curr_count = 0;
+        int count = MAX((int)(cache_hot_content*elementsCount()), 1);
+        typename std::list<std::pair<Key, Value>>::reverse_iterator it = 
+                                            lruList.rbegin();
+        for (; it != lruList.rend() && curr_count++ < count; ++it) {
+            hot_content.push_back(it->first);
+        }
+
+        return hot_content;
     }
 
 private:
