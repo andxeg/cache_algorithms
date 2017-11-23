@@ -11,8 +11,34 @@ PrePush::PrePush(Config &config) {
 	hist_hot_objects = config.get_float_by_name("PRE_PUSH_HISTORY_HOT_CONTENT");
 }
 
-VecStr PrePush::get_pre_push_list(VecStr &cache_hot_objects) {
-	return VecStr();
+VecStr PrePush::get_pre_push_list(VecStr &cache_hot_objects, 
+								HistoryManager &history_manager) {
+	VecStr result;
+	VecStr history_hot_objects = history_manager.get_hot_objects(window,
+													hist_hot_objects);
+	/* find objects whose are in mother-child relationship */
+	/* history hot objects */
+	for (auto &object : history_hot_objects) {
+		std::string mother_id = child_mother[object];
+		result.insert(	result.end(), 
+						mother_child[mother_id].begin(), 
+						mother_child[mother_id].end());
+	}
+
+	/* cache hot objects */
+	for (auto &object : cache_hot_objects) {
+		std::string mother_id = child_mother[object];
+		result.insert(	result.end(),
+						mother_child[mother_id].begin(),
+						mother_child[mother_id].end());
+	}
+
+	/* add history hot objects */
+	result.insert(	result.end(),
+					history_hot_objects.begin(),
+					history_hot_objects.end());
+
+	return result;								
 }
 
 void PrePush::read_mother_child(const std::string &mother_child_file) {

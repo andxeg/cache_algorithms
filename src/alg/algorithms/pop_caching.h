@@ -673,7 +673,7 @@ public:
         std::cout << "cache was initialized" << std::endl;
     }
 
-    std::string * find(const std::string & cid, const size_t & current_time) {
+    std::string * find(const std::string & cid, const size_t & current_time = 0) {
         ++cyclesCount;
         // std::cout << contextSpace->size() << std::endl;
 
@@ -883,6 +883,10 @@ public:
 
         // std::cout << "estimation -> " << estimation << std::endl;
         return estimation;
+    }
+
+    VecStr get_hot_content(const float &cache_hot_content) {
+        return VecStr();
     }
 
 private:

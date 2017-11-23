@@ -1,5 +1,6 @@
 #pragma once
 
+#include "defs.h"
 #include "lru.h"
 
 #include <cmath>
@@ -94,6 +95,10 @@ public:
 
         head.addCidSize(cid, size);
         tail.addCidSize(cid, size);
+    }
+
+    VecStr get_hot_content(const float &cache_hot_content) {
+        return VecStr();
     }
 
 private:

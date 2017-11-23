@@ -1,5 +1,6 @@
 #pragma once
 
+#include "defs.h"
 #include "lru.h"
 
 #include <cstdlib>
@@ -7,6 +8,7 @@
 #include <cmath>
 
 #define REQUESTS_TRESHOLD 2
+#define MAX(X, Y) ((X) > (Y) ? (X) : (Y))
 
 
 template <typename Key, typename Value>
@@ -48,10 +50,10 @@ public:
     }
 
     Value* put(const Key &key, const Value &value, const size_t & current_time = 0) {
-        // Value *result = find(key);
-        // if (result) {
-        //     return result;
-        // }
+        Value *result = find(key);
+        if (result) {
+            return result;
+        }
 
         // size_t requests_count = candidateList[key];
         
@@ -115,6 +117,21 @@ public:
             lruCache.addCidSize(cid, size);
         }
 
+    }
+
+    VecStr get_hot_content(const float &cache_hot_content) {
+        VecStr hot_content;
+        int curr_count = 0;
+        int count = MAX((int)(cache_hot_content*elementsCount()), 1);
+        for (int i = (lruList.size()-1); i >= 0 && curr_count < count; --i) {
+            auto &lru_cache = lruList[i];
+            typename std::list<std::pair<Key, Value>>::reverse_iterator it = 
+                                                lru_cache.lruList.rbegin();
+            for (; it != lru_cache.lruList.rend() && curr_count++ < count; ++it) {
+                hot_content.push_back(it->first);
+            }
+        }
+        return hot_content;
     }
 
 private:

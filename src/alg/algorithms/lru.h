@@ -1,5 +1,7 @@
 #pragma once
 
+#include "defs.h"
+
 #include <list>
 #include <unordered_map>
 #include <cstdlib>
@@ -111,6 +113,10 @@ public:
         contentSizes[cid] = size;
     }
 
+    VecStr get_hot_content(const float &cache_hot_content) {
+        return VecStr();
+    }
+
 private:
     void makeSizeInvariant(size_t size) {
         while (getCacheSize() > size) {
@@ -136,7 +142,7 @@ private:
         lruList.erase(it);
 
         return addedIt;
-    }
+    }    
 
 // private:
 public:

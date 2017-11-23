@@ -1,7 +1,8 @@
 #pragma once
 
-#include "fifocache.h"
+#include "defs.h"
 #include "lru.h"
+#include "fifocache.h"
 
 #include <cmath>
 #include <cstdlib>
@@ -111,6 +112,10 @@ public:
         aIn.addCidSize(cid, size);
         aOut.addCidSize(cid, size);
         mainCache.addCidSize(cid, size);
+    }
+
+    VecStr get_hot_content(const float &cache_hot_content) {
+        return VecStr();
     }
 
 private:

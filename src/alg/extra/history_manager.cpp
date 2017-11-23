@@ -37,7 +37,6 @@ HistoryManager::get_object_history(std::string &object_id) {
 
 std::vector<std::string> 
 HistoryManager::get_hot_objects(const int &window, const float &rate) {
-	// TODO
 	/*
 	1. fetch summary requests of the last window for each objects
 	2. sort objects by this sum

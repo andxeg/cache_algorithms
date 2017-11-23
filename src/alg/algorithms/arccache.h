@@ -1,5 +1,6 @@
 #pragma once
 
+#include "defs.h"
 #include "lru.h"
 
 #include <algorithm>
@@ -103,6 +104,10 @@ public:
         }
 
         contentSizes[cid] = size;
+    }
+
+    VecStr get_hot_content(const float &cache_hot_content) {
+        return VecStr();
     }
 
 private:

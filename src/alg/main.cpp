@@ -134,6 +134,32 @@ void read_cids_size(Cache &cache, const std::string &filename) {
     input.close();
 }
 
+template<typename Cache>
+void make_pre_push(Cache &cache, PrePush &pre_push,
+                    HistoryManager &history_manager, Config &config) {
+    float cache_hot_content = config.get_float_by_name("CACHE_HOT_CONTENT");
+
+    /* take hot content from cache */
+    VecStr hot_content = cache.get_hot_content(cache_hot_content);
+
+    hot_content = pre_push.get_pre_push_list(hot_content, history_manager);
+
+    /* add hot_content to cache */
+    /* hot_content may contains elements which are already in cache */
+    int count = 0;
+    for (auto &content : hot_content) {
+        if (cache.find(content) == nullptr) {
+            ++count;
+            cache.put(content, content);
+        }
+    }
+
+    print_current_data_and_time(std::string("Pre Push added: ") +
+                                ToString<size_t>(hot_content.size()) +
+                                std::string(", new elements: ") +
+                                ToString<int>(count));
+}
+
 template <typename Cache>
 int test(size_t cacheSize, const std::string& filename, Config &config,
         const size_t & learn_limit = 100, const size_t & period = 1000)
@@ -176,6 +202,7 @@ int test(size_t cacheSize, const std::string& filename, Config &config,
             periods_stat.back().start = access_time;
             prev_period_end = access_time;
             history_manager.start_new_period();
+            make_pre_push(cache, pre_push, history_manager, config);
         }
 
         cache.addCidSize(id, size);
@@ -211,9 +238,9 @@ int test(size_t cacheSize, const std::string& filename, Config &config,
                 << (time % 3600) % 60 << " secs" << std::endl;
 
     print_algorithm_results<Cache>(total_stat, periods_stat, cache, cacheSize);
-    history_manager.print_history();
-    pre_push.print_mother_child();
-    pre_push.print_child_mother();
+    // history_manager.print_history();
+    // pre_push.print_mother_child();
+    // pre_push.print_child_mother();
     return 0;
 }
 

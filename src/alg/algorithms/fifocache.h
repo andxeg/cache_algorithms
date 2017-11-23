@@ -1,5 +1,7 @@
 #pragma once
 
+#include "defs.h"
+
 #include <cstdlib>
 #include <cassert>
 #include <functional>
@@ -98,6 +100,10 @@ public:
         }
 
         contentSizes[cid] = size;
+    }
+
+    VecStr get_hot_content(const float &cache_hot_content) {
+        return VecStr();
     }
 
 private:
