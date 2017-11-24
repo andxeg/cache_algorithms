@@ -151,11 +151,11 @@ void make_pre_push(Cache &cache, PrePush &pre_push,
     /* hot_content may contains elements which are already in cache */
     ContentSizes contentSizes = cache.getContentSizes();
     int count = 0;
-    size_t size = 0;
+    float size = 0.0;
     for (auto &content : hot_content) {
         if (cache.find(content) == nullptr) {
             ++count;
-            size = contentSizes[content];
+            size = (float)contentSizes[content];
             if (size_filter.admit_object(content, size, history_manager) == true)
                 cache.put(content, content);
         }
@@ -212,6 +212,8 @@ int test(size_t cacheSize, const std::string& filename, Config &config,
             /* now start for pre_push and size_filter are the same */
             if (periods_stat.size() >= start_pre_push) {
                 size_filter.update_threshold(history_manager, contentSizes);
+                print_current_data_and_time(std::string("[SizeFilter] new threshold -> ") +
+                    ToString<float>(size_filter.get_threshold()));
                 make_pre_push(cache, pre_push, history_manager, size_filter, config);
             }
             periods_stat.back().end = access_time;
@@ -225,7 +227,7 @@ int test(size_t cacheSize, const std::string& filename, Config &config,
         history_manager.update_object_history(id, periods_stat.size());
         
         if (cache.find(id, access_time) == nullptr) {
-            if (size_filter.admit_object(id, size, history_manager) == true)
+            if (size_filter.admit_object(id, (float)size, history_manager) == true)
                 cache.put(id, id, access_time);
         } else {
             total_stat.hit += 1;

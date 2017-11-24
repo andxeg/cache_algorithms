@@ -4,13 +4,15 @@
 #include "config.h"
 #include "history_manager.h"
 
+
 class SizeFilter {
 public:
 	SizeFilter(Config &);
-	bool admit_object(std::string &, size_t &, HistoryManager &);
-	void update_threshold(HistoryManager &, ContentSizes &);
+	bool admit_object(std::string &id, const float &size, HistoryManager &history_manager);
+	void update_threshold(HistoryManager &history_manager, ContentSizes &content_sizes);
+	float get_threshold();
 private:
 	bool enable;
 	int window;
-	int threshold;
+	float threshold;
 };

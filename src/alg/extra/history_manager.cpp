@@ -70,6 +70,22 @@ HistoryManager::get_hot_objects(const int &window, const float &rate) {
 	return result;
 }
 
+float HistoryManager::get_average_size_in_window(const int &window, 
+										ContentSizes & content_sizes) {
+	size_t count    = 0;
+	size_t sum_size = 0;
+	for (auto &hist : objects_history) {
+		for (int i = 0; i < MIN(window, (int)hist.second.size()); ++i) {
+			if (hist.second[hist.second.size()-i-1] != 0) {
+				++count;
+				sum_size += content_sizes[hist.first];
+				break;
+			}
+		}
+	}
+	return sum_size / (float)count;
+}
+
 void HistoryManager::print_history() {
 	std::cout 	<< "History for " 
 				<< objects_history.begin()->second.size() 

@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <unordered_set>
 
 
 PrePush::PrePush(Config &config) {
@@ -13,32 +14,30 @@ PrePush::PrePush(Config &config) {
 
 VecStr PrePush::get_pre_push_list(VecStr &cache_hot_objects, 
 								HistoryManager &history_manager) {
-	VecStr result;
+	std::unordered_set<std::string> result;
 	VecStr history_hot_objects = history_manager.get_hot_objects(window,
 													hist_hot_objects);
 	/* find objects whose are in mother-child relationship */
 	/* history hot objects */
 	for (auto &object : history_hot_objects) {
 		std::string mother_id = child_mother[object];
-		result.insert(	result.end(), 
-						mother_child[mother_id].begin(), 
+		result.insert(	mother_child[mother_id].begin(), 
 						mother_child[mother_id].end());
 	}
 
 	/* cache hot objects */
 	for (auto &object : cache_hot_objects) {
 		std::string mother_id = child_mother[object];
-		result.insert(	result.end(),
-						mother_child[mother_id].begin(),
+
+		result.insert(	mother_child[mother_id].begin(),
 						mother_child[mother_id].end());
 	}
 
 	/* add history hot objects */
-	result.insert(	result.end(),
-					history_hot_objects.begin(),
+	result.insert(	history_hot_objects.begin(),
 					history_hot_objects.end());
 
-	return result;								
+	return VecStr(result.begin(), result.end());
 }
 
 void PrePush::read_mother_child(const std::string &mother_child_file) {
