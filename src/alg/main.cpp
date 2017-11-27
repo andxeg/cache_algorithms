@@ -188,6 +188,10 @@ int test(size_t cacheSize, const std::string& filename, Config &config,
     print_current_data_and_time("Start read cids sizes.");
     read_cids_size(cache, filename);
     print_current_data_and_time("After cache initialization.");
+
+    std::cout << "config start" << std::endl;
+    config.print();
+    std::cout << "config end" << std::endl;
     
     struct tm * now = print_current_data_and_time("Start algo.");
     int hour_start = now->tm_hour;

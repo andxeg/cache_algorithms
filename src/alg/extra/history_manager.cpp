@@ -71,19 +71,36 @@ HistoryManager::get_hot_objects(const int &window, const float &rate) {
 }
 
 float HistoryManager::get_average_size_in_window(const int &window, 
-										ContentSizes & content_sizes) {
+										ContentSizes & content_sizes,
+										const int &type) {
 	size_t count    = 0;
 	size_t sum_size = 0;
+	std::vector<size_t> sizes;
 	for (auto &hist : objects_history) {
+		size_t object_size = content_sizes[hist.first];
 		for (int i = 0; i < MIN(window, (int)hist.second.size()); ++i) {
 			if (hist.second[hist.second.size()-i-1] != 0) {
 				++count;
-				sum_size += content_sizes[hist.first];
+				sum_size += object_size;
+				sizes.push_back(object_size);
 				break;
 			}
 		}
 	}
-	return sum_size / (float)count;
+
+	if (count == 0) return 1.0;
+
+	switch (type) {
+		case 0:	/* return median size */
+			std::sort(sizes.begin(), sizes.end());
+			return (float)sizes[sizes.size()/2];
+		case 1: /* return mean size */
+			return sum_size / (float)count;
+			break;
+		default: /* default return mean size */
+			return sum_size / (float)count;
+			break;
+	}
 }
 
 void HistoryManager::print_history() {

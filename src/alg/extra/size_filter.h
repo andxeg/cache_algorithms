@@ -12,7 +12,9 @@ public:
 	void update_threshold(HistoryManager &history_manager, ContentSizes &content_sizes);
 	float get_threshold();
 private:
-	bool enable;
+	int type;
 	int window;
+	bool reversed_size;
+	bool enable;
 	float threshold;
 };
