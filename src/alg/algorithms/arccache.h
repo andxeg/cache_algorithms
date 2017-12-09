@@ -12,6 +12,7 @@ template <typename Key, typename Value>
 class ARCCache {
     typedef std::unordered_map<std::string, size_t> ContentSizes;
 public:
+    ARCCache() {};
     explicit ARCCache(size_t size, const size_t & learn_limit = 100, const size_t & period = 1000) :
             cacheSize(size < 1 ? 1 : size),
             splitPoint(0),
@@ -35,6 +36,10 @@ public:
         }
 
         return nullptr;
+    }
+
+    void prepare_cache() {
+        return;
     }
 
     Value* put(const Key &key, const Value &value, const size_t & current_time = 0) {

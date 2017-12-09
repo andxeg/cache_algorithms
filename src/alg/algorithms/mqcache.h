@@ -34,6 +34,7 @@ class MQCache {
     static constexpr size_t OUT_SIZE_MUL  = 4;
 
 public:
+    MQCache () {};
     explicit MQCache(size_t size, const size_t & learn_limit = 100, const size_t & period = 1000, size_t lruCount = DEF_LRU_COUNT) :
             cacheSize(size < lruCount ? lruCount : size),
             expireTime(cacheSize * 10),
@@ -42,6 +43,10 @@ public:
         for (size_t index = 0; index < lruCount; ++index) {
             lruList.push_back(LRUCache<Key, ValueHolder>(cacheSize));
         }
+    }
+
+    void prepare_cache() {
+        return;
     }
 
     Value* find(const Key &key, const size_t & current_time = 0) {

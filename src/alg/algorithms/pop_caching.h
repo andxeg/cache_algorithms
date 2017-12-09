@@ -637,6 +637,8 @@ public:
             delete contextSpace;
     }
 
+    PoPCaching() {};
+
     explicit PoPCaching(size_t size, const size_t & learn_limit = 100, const size_t & period = 1000) :
                 cacheSize(size < 1 ? 1 : size),
                 currentCacheSize(0),
@@ -671,6 +673,10 @@ public:
         ContextTree context_tree = contextSpace->get_context_tree();
         this->contextSpace->print_context_space(context_tree);
         std::cout << "cache was initialized" << std::endl;
+    }
+
+    void prepare_cache() {
+        return;
     }
 
     std::string * find(const std::string & cid, const size_t & current_time = 0) {
@@ -887,6 +893,10 @@ public:
 
     VecStr get_hot_content(const float &cache_hot_content) {
         return VecStr();
+    }
+
+    size_t size() {
+        return cacheSize;
     }
 
 private:

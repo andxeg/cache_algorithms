@@ -1,6 +1,7 @@
 #pragma once
 
 #include "defs.h"
+#include <vector>
 #include <unordered_map>
 
 
@@ -11,6 +12,10 @@ public:
 	int get_int_by_name(const std::string &name);
 	float get_float_by_name(const std::string &name);
 	std::string get_str_by_name(const std::string &name);
+
+	template <typename T> 
+	std::vector<T> get_vector_by_name(const std::string &name);
+	
 	void print();
 	
 private:

@@ -13,7 +13,7 @@ PrePush::PrePush(Config &config) {
 }
 
 VecStr PrePush::get_pre_push_list(VecStr &cache_hot_objects, 
-								HistoryManager &history_manager) {
+							      HistoryManager &history_manager) {
 	std::unordered_set<std::string> result;
 	VecStr history_hot_objects = history_manager.get_hot_objects(window,
 													hist_hot_objects);

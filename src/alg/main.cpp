@@ -28,11 +28,22 @@
 #include <algorithm>
 #include <vector>
 #include <unordered_set>
+#include <unordered_map>
 
 
 struct PeriodStat;
+struct TotalStat;
+typedef long long PoPId;
+typedef long long PoPSize;
+typedef std::vector<PoPId> VecPoP;
+typedef std::vector<PoPSize> VecPoPSize;
 typedef std::vector<PeriodStat> PeriodsStatistics;
 typedef std::unordered_map<std::string, size_t> ContentSizes;
+typedef std::unordered_map<PoPId, PeriodsStatistics> PIDsPeriodStatistics;
+typedef std::unordered_map<PoPId, TotalStat> PIDsTotalStats;
+typedef std::unordered_map<PoPId, HistoryManager> PIDsHistoryManagers;
+typedef std::unordered_map<PoPId, SizeFilter> PIDsSizeFilters;
+typedef std::unordered_map<PoPId, size_t> PIDsPeriodEnds;
 
 
 struct PeriodStat {
@@ -90,27 +101,67 @@ struct TotalStat {
 };
 
 template <typename Cache>
-void print_algorithm_results(const TotalStat &total_stat, 
-    const PeriodsStatistics &periods_stat, Cache &cache, const size_t &cache_size)
+void print_algorithm_results(PIDsTotalStats &pids_total_statistics, 
+                             PIDsPeriodStatistics &pids_period_statistics, 
+                             std::unordered_map<PoPId, Cache> &pids_caches, 
+                             VecPoP &pids,
+                             VecPoPSize &pids_sizes)
 {
     std::cout << "Algorithm results:" << std::endl;
-    std::cout << "Cache size " << cache_size << " Kbytes" << std::endl;
-    std::cout << "Total Object Hit Rate " << total_stat.object_hit_rate() << std::endl;
-    std::cout << "Total Byte Hit Rate " << total_stat.byte_hit_rate() << std::endl;
-    std::cout << "Average Object Hit Rate " << total_stat.average_object_hit_rate(periods_stat) << std::endl;
-    std::cout << "Average Byte Hit Rate " << total_stat.average_byte_hit_rate(periods_stat) << std::endl;
-    std::cout << "Cache status:" << std::endl;
-    std::cout << "Total Requests " << total_stat.requests << std::endl;
-    std::cout << "Cache size (in objects) " << cache.getCacheSize() << std::endl;
-    std::cout << "Cache size (in Kbytes) " << cache.elementsCount() << std::endl;
-    std::cout << std::endl; std::cout << std::endl; std::cout << std::endl;
 
-    std::cout << "Statistics for " << periods_stat.size() << " days" << std::endl;
-    for (auto & period : periods_stat) {
-        std::cout << "Start " << period.start << " End " << period.end << " Duration " << period.duration() << std::endl;
-        std::cout << "Hit " << period.hit << " Requests " << period.requests << std::endl;
-        std::cout << "Hit bytes " << period.hit_bytes << " Requests bytes " << period.requests_bytes << std::endl;
-        std::cout << "OHR " << period.object_hit_rate() << " BHR " << period.byte_hit_rate() << std::endl;
+    for (size_t i = 0; i < pids.size(); ++i) {
+        PoPId pid = pids[i];
+        PoPSize pid_size = pids_sizes[i];
+        std::cout << "PID: " << pid << " PID size: " << pid_size << std::endl;
+        Cache cache = pids_caches[pid];
+        std::cout << "Cache size " 
+                  << pid_size * 1024 * 1024 
+                  << " Kbytes" 
+                  << std::endl;
+
+        std::cout << "Total Object Hit Rate " 
+                  << pids_total_statistics[pid].object_hit_rate()
+                  << std::endl;
+
+        std::cout << "Total Byte Hit Rate "
+                  << pids_total_statistics[pid].byte_hit_rate() 
+                  << std::endl;
+
+        std::cout << "Average Object Hit Rate " <<
+                  pids_total_statistics[pid].average_object_hit_rate(pids_period_statistics[pid])
+                  << std::endl;
+
+        std::cout << "Average Byte Hit Rate " 
+                  << pids_total_statistics[pid].average_byte_hit_rate(pids_period_statistics[pid])
+                  << std::endl;
+
+        std::cout << "Cache status:" << std::endl;
+        std::cout << "Total Requests " << pids_total_statistics[pid].requests << std::endl;
+        std::cout << "Cache size (in Kbytes) "  << cache.getCacheSize() << std::endl;
+        std::cout << "Cache size (in objects) " << cache.elementsCount() << std::endl;
+        std::cout << std::endl; std::cout << std::endl; std::cout << std::endl;
+
+
+        std::cout << "Statistics for " << pids_period_statistics[pid].size() << " days" << std::endl;
+
+        for (auto &period : pids_period_statistics[pid]) {
+            std::cout << "Start " << period.start << " End " << period.end
+                      << " Duration " << period.duration()
+                      << std::endl;
+
+            std::cout << "Hit " << period.hit 
+                      << " Requests " << period.requests 
+                      << std::endl;
+
+            std::cout << "Hit bytes " << period.hit_bytes
+                      << " Requests bytes " << period.requests_bytes 
+                      << std::endl;
+
+            std::cout << "OHR " << period.object_hit_rate()
+                      << " BHR " << period.byte_hit_rate()
+                      << std::endl;
+        }
+        std::cout << std::endl; std::cout << std::endl; std::cout << std::endl;
     }
 
     std::cout << std::endl; std::cout << std::endl; std::cout << std::endl;
@@ -125,9 +176,11 @@ void read_cids_size(Cache &cache, const std::string &filename) {
         return;
     }
     std::string id;
+    size_t access_time;
+    PoPId pid;
     size_t size = 0;
     while (true) {
-        input >> size >> id >> size;
+        input >> access_time >> pid >> id >> size;
         if (input.eof() && size == 0) break;
         cache.addCidSize(id, size);
         size = 0;
@@ -137,9 +190,9 @@ void read_cids_size(Cache &cache, const std::string &filename) {
 
 template<typename Cache>
 void make_pre_push(Cache &cache, PrePush &pre_push,
-                    HistoryManager &history_manager, 
-                    SizeFilter &size_filter,
-                    Config &config) {
+                   HistoryManager &history_manager, 
+                   SizeFilter &size_filter,
+                   Config &config) {
     float cache_hot_content = config.get_float_by_name("CACHE_HOT_CONTENT");
 
     /* take hot content from cache */
@@ -150,7 +203,7 @@ void make_pre_push(Cache &cache, PrePush &pre_push,
     /* add hot_content to cache */
     /* hot_content may contains elements which are already in cache */
     ContentSizes contentSizes = cache.getContentSizes();
-    int count = 0;
+    int count  = 0;
     float size = 0.0;
     for (auto &content : hot_content) {
         if (cache.find(content) == nullptr) {
@@ -170,28 +223,55 @@ void make_pre_push(Cache &cache, PrePush &pre_push,
 
 template <typename Cache>
 int test(size_t cacheSize, const std::string& filename, Config &config,
-        const size_t & learn_limit = 100, const size_t & period = 1000)
+         const size_t & learn_limit = 100, const size_t & period = 1000)
 {
-    TotalStat total_stat;
-    PeriodsStatistics periods_stat;
-    periods_stat.push_back(PeriodStat());
+    /* Point of Presence (PoP) identifiers */
+    VecPoP pids       = config.get_vector_by_name<PoPId>("PIDS");
+    VecPoPSize pids_sizes = config.get_vector_by_name<PoPSize>("PIDS_CACHE_SIZES");
 
-    // size_t period_size = config.get_int_by_name(std::string("STAT_PERIOD_SIZE"));
+    /* create all data structures for each PoP */
+    PIDsPeriodStatistics pids_period_statistics;
+    PIDsTotalStats pids_total_statistics;
+    PIDsHistoryManagers pids_history_managers;
+    PIDsSizeFilters pids_size_filters;
+    std::unordered_map<PoPId, Cache> pids_caches;
+
+    for (size_t i = 0; i < pids.size(); ++i) {
+        PoPId pop_id = pids[i];
+        PoPSize pid_size = pids_sizes[i];
+        pids_period_statistics[pop_id] = PeriodsStatistics();
+        pids_period_statistics[pop_id].push_back(PeriodStat());
+        pids_total_statistics[pop_id]  = TotalStat();
+        pids_history_managers[pop_id]  = HistoryManager(config);
+        pids_size_filters[pop_id] = SizeFilter(config);
+        pids_caches[pop_id] = Cache(pid_size * 1024 * 1024, learn_limit, period);
+        pids_caches[pop_id].prepare_cache();
+    }
+
     size_t period_size = config.get_int_by_name("STAT_PERIOD_SIZE");
     size_t start_pre_push = config.get_int_by_name("START_PRE_PUSH");
     
-    Cache cache(cacheSize, learn_limit, period);
-    HistoryManager history_manager(config);
     PrePush pre_push(config);
-    SizeFilter size_filter(config);
+    std::cout << "Total PIDs count: " << pids_caches.size() << std::endl;
+    for (size_t i = 0; i < pids.size(); ++i) {
+        std::cout << "Pid: " << pids[i] << " with cache size: " << pids_caches[pids[i]].size() << std::endl;
+    }
     
+    /* read cids sizes for each caches */
     print_current_data_and_time("Start read cids sizes.");
-    read_cids_size(cache, filename);
+    read_cids_size<Cache>(pids_caches[pids[0]], filename);
+    ContentSizes contentSizes = pids_caches[pids[0]].getContentSizes();
+    for (size_t i = 1; i < pids.size(); ++i) {
+        PoPId pid = pids[i];
+        for (auto &elem : contentSizes) {
+            pids_caches[pid].addCidSize(elem.first, elem.second);
+        }
+    }
     print_current_data_and_time("After cache initialization.");
 
-    std::cout << "config start" << std::endl;
-    config.print();
-    std::cout << "config end" << std::endl;
+    // std::cout << "config start" << std::endl;
+    // config.print();
+    // std::cout << "config end" << std::endl;
     
     struct tm * now = print_current_data_and_time("Start algo.");
     int hour_start = now->tm_hour;
@@ -201,55 +281,73 @@ int test(size_t cacheSize, const std::string& filename, Config &config,
     std::ifstream in(filename);
     
     std::string id;
+    PoPId pid;
     size_t access_time, size;
-    in >> access_time >> id >> size;
-    size_t prev_period_end = access_time;
-    periods_stat.back().start = access_time;
+    in >> access_time >> pid >> id >> size;
 
-    ContentSizes contentSizes = cache.getContentSizes();
+    /* create map with previous period ends */
+    /* initialize periods statistics for each PoP */
+    PIDsPeriodEnds prev_period_ends;
+    for (size_t i = 0; i < pids.size(); ++i) {
+        PoPId pop_id = pids[i];
+        prev_period_ends[pop_id] = access_time;
+        pids_period_statistics[pop_id].back().start = access_time;
+    }
 
     while (true) {
-        
         if (in.eof()) {break;}
 
-        if ((access_time - prev_period_end) >= period_size) {
+        if ((access_time - prev_period_ends[pid]) >= period_size) {
             /* now start for pre_push and size_filter are the same */
-            if (periods_stat.size() >= start_pre_push) {
-                size_filter.update_threshold(history_manager, contentSizes);
+            if (pids_period_statistics[pid].size() >= start_pre_push) {
+                pids_size_filters[pid].update_threshold
+                                       (pids_history_managers[pid], contentSizes);
                 print_current_data_and_time(std::string("[SizeFilter] new threshold -> ") +
-                    ToString<float>(size_filter.get_threshold()));
-                make_pre_push(cache, pre_push, history_manager, size_filter, config);
+                    ToString<float>(pids_size_filters[pid].get_threshold()));
+
+                make_pre_push(pids_caches[pid],
+                              pre_push,
+                              pids_history_managers[pid],
+                              pids_size_filters[pid],
+                              config);
             }
-            periods_stat.back().end = access_time;
-            periods_stat.push_back(PeriodStat());
-            periods_stat.back().start = access_time;
-            prev_period_end = access_time;
-            history_manager.start_new_period();
+            pids_period_statistics[pid].back().end = access_time;
+            pids_period_statistics[pid].push_back(PeriodStat());
+            pids_period_statistics[pid].back().start = access_time;
+            prev_period_ends[pid] = access_time;
+            pids_history_managers[pid].start_new_period();
         }
 
-        cache.addCidSize(id, size);
-        history_manager.update_object_history(id, periods_stat.size());
+        // pids_caches[pid].addCidSize(id, size);
+        pids_history_managers[pid].update_object_history
+                                   (id, pids_period_statistics[pid].size());
         
-        if (cache.find(id, access_time) == nullptr) {
-            if (size_filter.admit_object(id, (float)size, history_manager) == true)
-                cache.put(id, id, access_time);
+        if (pids_caches[pid].find(id, access_time) == nullptr) {
+            if (pids_size_filters[pid].admit_object(id, (float)size, 
+                                        pids_history_managers[pid]) == true) {
+                pids_caches[pid].put(id, id, access_time);
+            }
         } else {
-            total_stat.hit += 1;
-            total_stat.hit_bytes += size;
-            periods_stat.back().hit += 1;
-            periods_stat.back().hit_bytes += size;
+            pids_total_statistics[pid].hit += 1;
+            pids_total_statistics[pid].hit_bytes += size;
+            pids_period_statistics[pid].back().hit += 1;
+            pids_period_statistics[pid].back().hit_bytes += size;
         }
 
-        total_stat.requests += 1;
-        total_stat.requests_bytes += size;
-        periods_stat.back().requests += 1;
-        periods_stat.back().requests_bytes += size;
+        pids_total_statistics[pid].requests += 1;
+        pids_total_statistics[pid].requests_bytes += size;
+        pids_period_statistics[pid].back().requests += 1;
+        pids_period_statistics[pid].back().requests_bytes += size;
 
-        if (total_stat.requests % 1000 == 0) {
-          std::cerr << "Process " << total_stat.requests << std::endl;;
+        if (pids_total_statistics[pid].requests % 1000 == 0) {
+            std::cerr <<  "PID: " << 
+                          pid << 
+                          " Process " << 
+                          pids_total_statistics[pid].requests 
+                          << std::endl;
         }
 
-        in >> access_time >> id >> size;
+        in >> access_time >> pid >> id >> size;
     }
 
     now = print_current_data_and_time("Algorithm was finished.");
@@ -260,10 +358,12 @@ int test(size_t cacheSize, const std::string& filename, Config &config,
                 << (time % 3600) / 60  << " mins " 
                 << (time % 3600) % 60 << " secs" << std::endl;
 
-    print_algorithm_results<Cache>(total_stat, periods_stat, cache, cacheSize);
-    // history_manager.print_history();
-    // pre_push.print_mother_child();
-    // pre_push.print_child_mother();
+    print_algorithm_results<Cache>(pids_total_statistics, 
+                                   pids_period_statistics,
+                                   pids_caches,
+                                   pids, 
+                                   pids_sizes);
+    
     return 0;
 }
 

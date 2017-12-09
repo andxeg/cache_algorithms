@@ -16,13 +16,34 @@ class SNLRUCache {
     typedef std::unordered_map<std::string, size_t> ContentSizes;
     typedef std::unordered_map<std::string, size_t> CandidateList;
 public:
-    explicit SNLRUCache(size_t size, const size_t & learn_limit = 100, const size_t & period = 1000, size_t lruCount = 4) :
+    SNLRUCache() {};
+    explicit SNLRUCache(size_t size, 
+                        const size_t & learn_limit = 100, 
+                        const size_t & period = 1000, 
+                        size_t lruCount = 4) :
             cacheSize(size < lruCount ? lruCount : size),
             currentCacheSize(0) {
         for (size_t index = 0; index < lruCount; ++index) {
             lruList.push_back(LRUCache<Key, Value>(floor(float(cacheSize) / lruCount)));
+            // if (index != 0) {
+            //     lruList.back().setEvictionCallback([=](const Key &key, 
+            //                                            const Value &value,
+            //                                            const size_t & current_time) {
+            //         std::cout << "eviction callback -> " << index << std::endl;
+            //         printf("%p\n", this);
+            //         this->lruList[index - 1].put(key, value, current_time);
+            //     });
+            // }
+        }
+    }
+
+    void prepare_cache() {
+        for (size_t index = 0; index < lruList.size(); ++index) {
             if (index != 0) {
-                lruList.back().setEvictionCallback([=](const Key &key, const Value &value, const size_t & current_time ) {
+                lruList[index].setEvictionCallback([=](const Key &key, 
+                                                   const Value &value,
+                                                   const size_t & current_time) {
+                    // std::cout << "eviction callback -> " << index << std::endl;
                     this->lruList[index - 1].put(key, value, current_time);
                 });
             }
@@ -36,6 +57,7 @@ public:
         // }
 
         // candidateList[key] += 1;
+        // std::cout << "s4lru find 1" << std::endl;
 
         for (size_t index = 0; index < lruList.size() - 1; ++index) {
             Value *value = lruList[index].find(key, current_time);
@@ -46,14 +68,17 @@ public:
             }
         }
 
+        // std::cout << "s4lru find 2" << std::endl;
+
         return lruList.back().find(key, current_time);
     }
 
     Value* put(const Key &key, const Value &value, const size_t & current_time = 0) {
-        Value *result = find(key);
-        if (result) {
-            return result;
-        }
+        /* check cid for the existence */
+        // Value *result = find(key);
+        // if (result) {
+        //     return result;
+        // }
 
         // size_t requests_count = candidateList[key];
         

@@ -29,20 +29,25 @@ class LRU_K_Cache {
     typedef std::list<std::pair<Key, Value>> LruList;
     typedef std::unordered_map<std::string, size_t> ContentSizes;
 public:
+    LRU_K_Cache() {};
     explicit LRU_K_Cache(size_t size, const size_t & learn_limit = 100, 
                             const size_t & period = 1000, const size_t & history_len = 2) :
             cacheSize(size < 1 ? 1 : size),
             currentCacheSize(0)
-        {
-            // TODO
-            // Add config file and take all algorithm's parameters to it
-            // learn_period and period from pop_caching
-            // here learn_period and period have another semantic
+    {
+        // TODO
+        // Add config file and take all algorithm's parameters to it
+        // learn_period and period from pop_caching
+        // here learn_period and period have another semantic
 
-            correlated_reference_period = learn_limit;
-            retained_information_period = period;
-            this->history_len = history_len;
-        }
+        correlated_reference_period = learn_limit;
+        retained_information_period = period;
+        this->history_len = history_len;
+    }
+
+    void prepare_cache() {
+        return;
+    }
 
     Value* find(const Key &key, const size_t & current_time = 0) {
         auto it = lookup.find(key);

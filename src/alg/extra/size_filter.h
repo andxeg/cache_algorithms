@@ -7,6 +7,7 @@
 
 class SizeFilter {
 public:
+	SizeFilter() {};
 	SizeFilter(Config &);
 	bool admit_object(std::string &id, const float &size, HistoryManager &history_manager);
 	void update_threshold(HistoryManager &history_manager, ContentSizes &content_sizes);

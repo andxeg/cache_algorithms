@@ -120,3 +120,4 @@ done
 # for results
 # type command
 # ./pre_push_start.sh ./build/alg/cachealg s4lru dataset2/pids_without_exceptional_contents/dataset2_pid_5_time_cid_size_without_except_content.log
+# ./build/alg/cachealg s4lru 1000000000 1000 10000 /home/andrew/ARCCN_CDN/analyze_user_log_backup_22_08_2017/datasets_without_exceptional_contents/dataset2.log config.cf

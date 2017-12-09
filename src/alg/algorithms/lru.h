@@ -17,30 +17,49 @@ class LRUCache {
     typedef std::list<std::pair<Key, Value>> LruList;
     typedef std::unordered_map<std::string, size_t> ContentSizes;
 public:
+    LRUCache() {};
     explicit LRUCache(size_t size, const size_t & learn_limit = 100, const size_t & period = 1000) :
             cacheSize(size < 1 ? 1 : size),
             currentCacheSize(0) {}
 
     Value* find(const Key &key, const size_t & current_time = 0) {
+        // std::cout << "lru find 1.1" << std::endl;
+        // std::cout << "lookup.size() -> " << lookup.size() << std::endl;
         auto it = lookup.find(key);
+
+        // std::cout << "lru find 1.2" << std::endl;
 
         if (it == lookup.end()) {
             return nullptr;
         }
 
+        // std::cout << "lru find 2" << std::endl;
+
         return &promote(it->second)->second;
     }
 
+    void prepare_cache() {
+        return;
+    }
+
     Value* put(const Key &key, const Value &value, const size_t & current_time = 0) {
+        // std::cout << "lru put 1.1" << std::endl;
+
         Value *result = find(key);
         if (result) {
             return result;
         }
 
-        
+        // std::cout << "lru put 1.2" << std::endl;
+
+        if (contentSizes.find(key) == contentSizes.end()) {
+            std::cout << "there is not cid: " << key << " in contentSizes" << std::endl;
+        }
         size_t cidSize = contentSizes[key];
         if (cidSize > cacheSize)
             return nullptr;
+
+        // std::cout << "lru put 2" << std::endl;
 
         makeSizeInvariant(cacheSize - cidSize);
 
@@ -49,6 +68,8 @@ public:
         lookup[key] = addedIt;
 
         currentCacheSize += cidSize;
+
+        // std::cout << "lru put 3" << std::endl;
 
         return &addedIt->second;
     }
@@ -132,12 +153,16 @@ public:
 private:
     void makeSizeInvariant(size_t size) {
         while (getCacheSize() > size) {
+            // std::cout << "make size invariant" << std::endl;
             if (evictionCallback) {
+                // std::cout << "1" << std::endl;
                 evictionCallback(lruList.front().first, lruList.front().second, 0);
             }
 
+            // std::cout << "2" << std::endl;
             size_t cidSize = contentSizes[lruList.front().first];
             currentCacheSize -= cidSize;
+            // std::cout << "3" << std::endl;
 
             lookup.erase(lruList.front().first);
 

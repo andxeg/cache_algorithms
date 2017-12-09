@@ -17,7 +17,9 @@ Config::Config(const std::string &filename) {
 	std::string line;
 	while (true) {
 		input >> line;
-		if (input.eof()  && line == "") break;
+		if (input.eof() && line == "") break;
+
+		if (line[0] == '#') continue;
 
 		std::size_t pos = line.find('=');
 		if (pos == std::string::npos) {
@@ -57,6 +59,28 @@ std::string Config::get_str_by_name(const std::string &name) {
 		return "";
 	}
 	return config_map[name];
+}
+
+template <>
+std::vector<long long> Config::get_vector_by_name(const std::string &name) {
+	std::vector<long long> result;
+	auto it = config_map.find(name);
+	if (it == config_map.end()) {
+		std::cerr << "[ERROR] There is not " << name << " in config file" << std::endl;
+		return result;
+	}
+
+	std::string value = it->second;
+
+	std::size_t pos = value.find(',');
+	while (pos != std::string::npos) {
+		result.push_back(convertFromStringTo<long long>(value.substr(0, pos)));
+		value = value.substr(pos+1);
+		pos = value.find(',');
+	}
+
+	result.push_back(convertFromStringTo<long long>(value));
+	return result;
 }
 
 void Config::print() {

@@ -10,6 +10,7 @@
 class HistoryManager {
 	typedef std::unordered_map<std::string, std::vector<int>> ObjectsHistory;
 public:
+	HistoryManager() {};
 	HistoryManager(Config &config);
 	void start_new_period();
 	void update_object_history(	std::string &object_id, 

@@ -11,6 +11,7 @@ template <typename Key, typename Value>
 class TwoQCache {
     typedef std::unordered_map<std::string, size_t> ContentSizes;
 public:
+    TwoQCache () {};
     explicit TwoQCache(size_t size, const size_t & learn_limit = 100, const size_t & period = 1000, 
                                     float mainCacheFactor = 0.60, 
                                     float outCacheFactor = 0.20,
@@ -27,6 +28,10 @@ public:
                 evictionCallback(key, value);
             }
         });
+    }
+
+    void prepare_cache() {
+        return;
     }
 
     Value* find(const Key &key, const size_t & current_time = 0) {
