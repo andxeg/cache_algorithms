@@ -1,0 +1,63 @@
+Total PIDs count: 5
+Pid: 3 with cache size: 14780727296 <in Kbytes>
+Pid: 5 with cache size: 6913261568
+Pid: 8 with cache size: 7820279808
+Pid: 9 with cache size: 5981077504
+Pid: 12 with cache size: 9167699968
+
+Algorithm work time -> <work time in hours, mins and secs>
+Algorithm results:
+PID: 3 PID size: 14096 <in Gbytes>
+Cache size 14780727296 Kbytes
+Total Object Hit Rate 0.886787
+Total Byte Hit Rate 0.86955
+Average Object Hit Rate 0.884804
+Average Byte Hit Rate 0.866064
+Cache status:
+Total Requests 6636160
+Cache size (in Kbytes) 14762034776
+Cache size (in objects) 14545
+
+PID: 5 PID size: 6593
+Cache size 6913261568 Kbytes
+Total Object Hit Rate 0.819432
+Total Byte Hit Rate 0.774804
+Average Object Hit Rate 0.815729
+Average Byte Hit Rate 0.772964
+Cache status:
+Total Requests 955974
+Cache size (in Kbytes) 6897465361
+Cache size (in objects) 7451
+
+PID: 8 PID size: 7458
+Cache size 7820279808 Kbytes
+Total Object Hit Rate 0.873672
+Total Byte Hit Rate 0.841161
+Average Object Hit Rate 0.856181
+Average Byte Hit Rate 0.800054
+Cache status:
+Total Requests 1108565
+Cache size (in Kbytes) 7804353324
+Cache size (in objects) 9094
+
+PID: 9 PID size: 5704
+Cache size 5981077504 Kbytes
+Total Object Hit Rate 0.868997
+Total Byte Hit Rate 0.834853
+Average Object Hit Rate 0.850851
+Average Byte Hit Rate 0.787241
+Cache status:
+Total Requests 1175395
+Cache size (in Kbytes) 5965230363
+Cache size (in objects) 6562
+
+PID: 12 PID size: 8743
+Cache size 9167699968 Kbytes
+Total Object Hit Rate 0.85521
+Total Byte Hit Rate 0.798916
+Average Object Hit Rate 0.854054
+Average Byte Hit Rate 0.800803
+Cache status:
+Total Requests 1618058
+Cache size (in Kbytes) 9155622642
+Cache size (in objects) 11116
