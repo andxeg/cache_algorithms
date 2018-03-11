@@ -396,7 +396,7 @@ int main(int argc, const char* argv[]) {
 
     if (cacheType == "lru_k") {
         return test<LRU_K_Cache<std::string, std::string>>
-                (cacheSize, filename, config, learn_limit, period);
+                (cacheSize, filename, config);
     }    
 
     if (cacheType == "pop_caching") {
