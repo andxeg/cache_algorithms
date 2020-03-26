@@ -90,6 +90,8 @@ public:
         return lruList.front().put(key, value, current_time);
     }
 
+
+
     bool erase(const Key &key) {
         return false;
     }
@@ -157,6 +159,24 @@ public:
             }
         }
         return hot_content;
+    }
+
+    void setCacheSize(size_t size) {
+        // LRU cache in front (0 index) -> least recently used or evicted from LRU with index 1
+        // LRU cache in back  (N index) -> most recently used
+        // walk through least popular to most popular
+        for (auto& lru : lruList) {
+            size_t global_size = getCacheSize();
+            if (global_size <= size) {
+                break;
+            }
+
+            if ((global_size - lru.getCacheSize()) > size) {
+                lru.setCacheSize(0);
+            } else {
+                lru.setCacheSize(size);
+            }
+        }
     }
 
 private:

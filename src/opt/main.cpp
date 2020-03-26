@@ -151,6 +151,12 @@ public:
         ++cyclesCount;
     }
 
+    void setCacheSize(size_t size) {
+        while (getCacheSize() > size) {
+            freeUpSpace();
+        }
+    }
+
     float hitRate() const {
         return cyclesCount != 0 ? 100 * (cyclesCount - missCount) / float(cyclesCount) : -1;
     }
